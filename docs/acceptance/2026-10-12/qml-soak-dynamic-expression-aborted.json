@@ -1,0 +1,12 @@
+{
+  "status": "aborted_incomplete",
+  "reason": "Test harness repeatedly created QQmlExpression during scrolling; RSS trend cannot be attributed to the application",
+  "pid": 14924,
+  "executable": "E:\\Code\\ClipBoardHistoryQT\\build\\Desktop_Qt_6_11_1_MinGW_64_bit_RelWithDebInfo\\tst_qml_acceptance.exe",
+  "started_utc": "2026-10-12T10:33:47.0363383Z",
+  "stopped_utc": "2026-10-12T10:45:26.0942167Z",
+  "elapsed_s": 699.0592153,
+  "cpu_s": 159.734375,
+  "rss_bytes": 162635776,
+  "warning": false
+}

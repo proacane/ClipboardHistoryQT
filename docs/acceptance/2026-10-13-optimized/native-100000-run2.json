@@ -1,0 +1,440 @@
+{
+    "build_type": "Release",
+    "capture_scope": "Ten sequential prebuilt high-entropy synthetic 4K images through actual queue, PNG encoder, repository; no OS clipboard accessed",
+    "expansion_upper_bound_ms": [
+    ],
+    "first_settings_ready_upper_bound_ms": 111.0253,
+    "frame_timestamps_ms": [
+        12.9716,
+        90.7008,
+        124.6772,
+        236.3715,
+        338.1597,
+        376.2304,
+        468.3133,
+        559.582,
+        589.6542,
+        699.6101,
+        767.9085,
+        847.3448,
+        875.661,
+        968.2943,
+        1026.2422,
+        1117.7932,
+        1129.1161,
+        1220.7593,
+        1301.4602,
+        1381.5113,
+        1406.7918,
+        1495.0866,
+        1589.8685,
+        1630.3122,
+        1730.4066,
+        1800.228,
+        1882.3606,
+        1887.7461,
+        1999.056,
+        2101.6434,
+        2127.8333,
+        2218.3827,
+        2317.6219,
+        2338.8548,
+        2456.2055,
+        2556.1378,
+        2575.9745,
+        2666.5429,
+        2698.5675,
+        2785.6196,
+        2831.245,
+        2921.9399,
+        3019.3497,
+        3049.7451,
+        3161.1566,
+        3202.2992,
+        3291.448,
+        3328.2986,
+        3423.0243,
+        3523.8342,
+        3564.6103,
+        3654.2874,
+        3754.2334,
+        3761.9373,
+        3876.282,
+        3971.9278,
+        4015.8689,
+        4108.2926,
+        4168.4018,
+        4259.0852,
+        4297.1228,
+        4379.584,
+        4409.9675,
+        4488.6267,
+        4515.5196,
+        4610.3972,
+        4715.5062,
+        4751.5598,
+        4842.8908,
+        4903.2992,
+        4992.1042,
+        5011.6279,
+        5125.452,
+        5224.7405,
+        5252.7065,
+        5343.5423,
+        5442.3495,
+        5471.8731,
+        5563.1801,
+        5667.9723,
+        5685.5169,
+        5796.4235,
+        5897.9088,
+        5908.68,
+        6010.3845,
+        6061.3915,
+        6151.8095,
+        6182.7433,
+        6293.5031,
+        6355.0144,
+        6445.2874,
+        6485.952,
+        6576.6509,
+        6635.1745,
+        6726.4578,
+        6737.3606,
+        6857.9837,
+        6888.3323,
+        6978.2175,
+        6997.6412,
+        7108.3535,
+        7190.6521,
+        7232.1305,
+        7322.6621,
+        7375.5277,
+        7379.5823,
+        7405.6106,
+        7408.942,
+        7433.4491,
+        7437.5727
+    ],
+    "graphics_api": 4,
+    "ingestion": [
+    ],
+    "os": "Windows 10 Version 22H2",
+    "phases": [
+    ],
+    "platform_scope": "Real native window hide/show; tray and hotkey remain substitutes",
+    "qt_version": "6.11.1",
+    "qt_warnings": [
+    ],
+    "render_scope": "Native exposed QQuickWindow frameSwapped intervals; proxy, not GPU execution/display presentation timings",
+    "resources": [
+    ],
+    "retained_settings_reopen_ms": 0.5297,
+    "rows": 100000,
+    "search_scope": "Model filter to completion; excludes 250 ms user input debounce",
+    "searches": [
+        {
+            "model_ms": 68.6559,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 96.8691,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 71.6973,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 93.2104,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 61.5808,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 110.8286,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 81.9922,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 103.5969,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 82.187,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 103.2851,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 82.6997,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 94.3826,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 64.1842,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 112.0822,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 84.7478,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 94.3521,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 74.1931,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 96.3104,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 80.6256,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 96.6244,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 70.2211,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 91.1437,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 80.5594,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 92.6859,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 79.0333,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 111.3146,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 71.6952,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 93.4284,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 81.7783,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 93.3725,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 81.2345,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 93.0565,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 77.4108,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 103.3635,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 71.7103,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 103.7165,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 81.3669,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 93.3142,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 81.6978,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 103.0569,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 70.5769,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 95.1496,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 81.2012,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 93.2093,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 80.7466,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 92.1501,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 76.7751,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 92.6508,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 83.2506,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 102.7715,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 71.6823,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 112.1668,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 81.2641,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 102.6345,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 81.185,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 121.5988,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 70.7191,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 94.9828,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        },
+        {
+            "model_ms": 63.7009,
+            "query": "benchmark-needle",
+            "rows_loaded": 50
+        },
+        {
+            "model_ms": 91.7648,
+            "query": "no-match-acceptance-unique-92719",
+            "rows_loaded": 0
+        }
+    ],
+    "startup_scope": "Queue initialization + Release compiled QML + first page + exposed frame; excludes process/Qt app initialization and fixture copy; QtTest polling <=50 ms",
+    "startup_to_model_ms": 676.0964,
+    "startup_to_usable_render_upper_bound_ms": 781.9161
+}

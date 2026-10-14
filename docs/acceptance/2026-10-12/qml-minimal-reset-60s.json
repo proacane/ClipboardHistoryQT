@@ -1,0 +1,24 @@
+{
+    "baseline": "Qt Window/ListView/QStringListModel; no application delegates or services",
+    "clear_notification": "modelReset",
+    "elapsed_ms": 60031,
+    "model_reset_cycles": 29,
+    "qml_warning_count": 0,
+    "qt_warning_count": 13,
+    "qt_warnings": [
+        "DelegateModel::cancel: index out range 135 0",
+        "DelegateModel::cancel: index out range 120 0",
+        "DelegateModel::cancel: index out range 120 0",
+        "DelegateModel::cancel: index out range 117 0",
+        "DelegateModel::cancel: index out range 117 0",
+        "DelegateModel::cancel: index out range 120 0",
+        "DelegateModel::cancel: index out range 122 0",
+        "DelegateModel::cancel: index out range 119 0",
+        "DelegateModel::cancel: index out range 119 0",
+        "DelegateModel::cancel: index out range 119 0",
+        "DelegateModel::cancel: index out range 120 0",
+        "DelegateModel::cancel: index out range 119 0",
+        "DelegateModel::cancel: index out range 116 0"
+    ],
+    "reuse_items": false
+}

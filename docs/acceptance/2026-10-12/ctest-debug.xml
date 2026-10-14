@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Win32-mingw32-make"
+	tests="11"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname="DESKTOP-73LE3U3"
+	time="7"
+	timestamp="2026-10-12T18:49:36"
+	>
+	<testcase name="history_repository" classname="history_repository" time="0.694227" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="image_store" classname="image_store" time="0.0415243" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="history_service" classname="history_service" time="0.128203" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="history_task_queue" classname="history_task_queue" time="0.916393" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="history_model" classname="history_model" time="3.73174" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="qml_acceptance" classname="qml_acceptance" time="1.55202" status="run">
+		<properties/>
+		<system-out>QML debugging is enabled. Only use this in a safe environment.
+</system-out>
+	</testcase>
+	<testcase name="clipboard_capture" classname="clipboard_capture" time="0.061969" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="app_settings" classname="app_settings" time="0.139823" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="privacy_logger" classname="privacy_logger" time="0.111987" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="legacy_importer" classname="legacy_importer" time="0.297375" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="windows_platform_controller" classname="windows_platform_controller" time="0.228869" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+</testsuite>

@@ -1,0 +1,203 @@
+{
+  "StartedUtc": "2026-10-13T14:28:13.6976332Z",
+  "Hashes": [
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\CMakeLists.txt",
+      "SHA256": "99B4F9D03B103A08F036C0A980238B3AFCD8E322A241F151A6EE90CD1C33F94C"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\tests\\acceptance\\tst_qml_acceptance.cpp",
+      "SHA256": "9B0B0373889400D30BCFF91031EBB3102577DA02D8432EFEE4D27B346981E468"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\tests\\acceptance\\run_release_performance.ps1",
+      "SHA256": "1CCEC75A0CD5A9E4B68084A6E409BB0C27DCDF04157D4D470ACAA416F5D6FF42"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\app\\main.cpp",
+      "SHA256": "9EFAC587A60B720E04B4207E0751A172581087DA6D60A55D4CF789C0762CA498"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\clipboard_capture.cpp",
+      "SHA256": "B7F87122A45F9323651DFF43AF55D88BA9C831DD51E631E7A72867A736DD89F2"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\clipboard_capture.h",
+      "SHA256": "AFCFFBE1E252CA706B9388595CB869CC72D4514FC198BDD80C2562F44ABD47BC"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_model.cpp",
+      "SHA256": "6A88E9C4D449BD5AEE8C47B92006EE7075065BACF6486CE30D30E34662EC9035"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_model.h",
+      "SHA256": "721F76A2989CCA5896BDC2A9A308C9492F9D8E8BB2EA196028A066170978F008"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_repository.cpp",
+      "SHA256": "8B3D53A625C1FA8EF6BADFDA74DF95D1A833F1FECE887E01888B9A77E73AE95D"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_repository.h",
+      "SHA256": "67E9F76F88343E141FC89E79A835C7E51E74764A68C2D324B6B268F1CA4B3880"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_service.cpp",
+      "SHA256": "AAB65DB6C8DE3F97511A9E084C16493E3DA418EC9A05C2D06D370BE8432335BF"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_service.h",
+      "SHA256": "15DB432FAFB946D110ACEE6C21C4274A35CDF20262A69CF88FC1042EB1BA3A28"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_task_queue.cpp",
+      "SHA256": "072040A7B9FC62A0FEE6179C31458390CDD6A61EA7A06368D82570363BC1DE3A"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_task_queue.h",
+      "SHA256": "795FBC8D0A6647BDBF845CE6D16F07E51534CE4FA94F4C007A541FC822C16D38"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_worker.cpp",
+      "SHA256": "AE7B70E93035CFEF7908411BA5F8682E7226FACB43F06A2424173CCE9E20B695"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\history_worker.h",
+      "SHA256": "FFC2DD850F011B6E17D769CD866F7ABE13E18A2D1E36BBBC26F220DF37F1C872"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\image_store.cpp",
+      "SHA256": "E4D0738143D6A2D98FCA19094C7E6806507EB77B92A041746E29AC76437E0B4C"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\history\\image_store.h",
+      "SHA256": "E9E8392ECA0867DC1A421F7A6BB747874DCD9FB5370DA31515927E9F1E289472"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\import\\legacy_importer.cpp",
+      "SHA256": "53698A8B90BF9F4C03B63964C58EDCCB3FBB227FCF0F8CEE786EF97D9CA6D78C"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\import\\legacy_importer.h",
+      "SHA256": "AB6B3BDF127A4973C3B2C757C41ECBA7E950935C755BEC55FF8C34636E3D8332"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\logging\\PrivacyLogger.cpp",
+      "SHA256": "AEC5250757BD9825BFBF89DF1D1A7D718697D03A9EC31AF2679FD6F36C9C226A"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\logging\\PrivacyLogger.h",
+      "SHA256": "9C93B604D8625A829E89E379788EDC293552A5429D964319D64CBE4F61DB7566"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\settings\\app_paths.cpp",
+      "SHA256": "6C426FD9829F4562AFDED3882656BDA77B0504D65887B215C622ED97F51D722C"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\settings\\app_paths.h",
+      "SHA256": "1E2AEBD89E0110067174D3D94D8698EFABA21ED17BE2F94AFAB63D8F98EE69ED"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\settings\\app_settings.cpp",
+      "SHA256": "C34733AFB6C2C05DED594FE20943C45F444EC1FC39EB8AA7CEE9ED933CB2FB25"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\core\\settings\\app_settings.h",
+      "SHA256": "7A9646A3C62A82119FD7EDED7F50AC6C9C93B5B7A635CF95072CB8D728C994AA"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\platform\\windows\\windows_platform_controller.cpp",
+      "SHA256": "874E60346D0A7601F37F8CB9E9D703959535C7650693ACAC35E3AB15B79E1C8F"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\platform\\windows\\windows_platform_controller.h",
+      "SHA256": "A721F508EE3E5DE70E341B3F77B38D3FC840D79E44287AF5FD3D9AA6AB97020C"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\ui\\Main.qml",
+      "SHA256": "DA640E96B3159F046C54003B1025B0F501ED76FBB4DA815345BEA6F581CA0826"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\src\\ui\\ThemePalette.js",
+      "SHA256": "7EEE4CA217D45C9803D26C1EA5EA917ECC789AD76E2F74E7690789DF4EB97A09"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\resources\\app_icon.h",
+      "SHA256": "5813AE25AB5EDB905259E05234705D34695149D597BBBA94BEF7C92B2B51541A"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\resources\\app_icon.rc.in",
+      "SHA256": "89DE8717FDE3F605088DB8F72DEB3C05ACD702D29EFC8CE46FDA8390DAC161B8"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\resources\\app_icons.qrc",
+      "SHA256": "C6A31D6E55F67EAD5C7053C0E2A8802D5732C27D881060F03E4DC1E9D742080A"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\resources\\app-icon.ico",
+      "SHA256": "729FEDE8100543BC0CFB90FA38308490729AB4E74482E500A44D2EC37EB5635F"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\resources\\app-icon.png",
+      "SHA256": "EB963C41BBF91A679C0B7709DF38BFC293BEA624B3C34E5918837FBCBE3BB95A"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\resources\\custom-theme.json",
+      "SHA256": "2CD30056DD961F6A82E3A3F866D4D218F3FCD632D81549E81EF7E063B5FDE743"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\build\\Desktop_Qt_6_11_1_MinGW_64_bit_Release\\ClipboardHistory.exe",
+      "SHA256": "99FE42D364EDFCBF8C605893DBF248FF23FEEEED52A5508CF6598C166185A329"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\build\\Desktop_Qt_6_11_1_MinGW_64_bit_Release\\tst_qml_acceptance.exe",
+      "SHA256": "55E440D5BD0BB040D8C86ED61E7E3C906E7C81D0DD15CE95F997F78F0BB898BE"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\build\\performance-fixtures-20261013\\10000\\history.sqlite3",
+      "SHA256": "A8F49D40F5D2840FCFDA2ADF2AD4EB651EBF0FF9DE4657F65A5A6E1310C80CDD"
+    },
+    {
+      "Path": "E:\\Code\\ClipBoardHistoryQT\\build\\performance-fixtures-20261013\\100000\\history.sqlite3",
+      "SHA256": "18C4946D7EFADF7802ECFAB1E1F0AC0669CB0775DF90D9B1DEF7370C640A64A1"
+    }
+  ],
+  "Runs": [
+    {
+      "Name": "native-10000-run1",
+      "ExitCode": 0,
+      "CompletedUtc": "2026-10-13T14:29:18.6460642Z"
+    },
+    {
+      "Name": "native-10000-run2",
+      "ExitCode": 0,
+      "CompletedUtc": "2026-10-13T14:29:23.1697380Z"
+    },
+    {
+      "Name": "native-10000-run3",
+      "ExitCode": 0,
+      "CompletedUtc": "2026-10-13T14:29:27.6894209Z"
+    },
+    {
+      "Name": "native-100000-run1",
+      "ExitCode": 0,
+      "CompletedUtc": "2026-10-13T14:33:46.8577681Z"
+    },
+    {
+      "Name": "native-100000-run2",
+      "ExitCode": 0,
+      "CompletedUtc": "2026-10-13T14:33:56.1723348Z"
+    },
+    {
+      "Name": "native-100000-run3",
+      "ExitCode": 0,
+      "CompletedUtc": "2026-10-13T14:34:04.9791709Z"
+    }
+  ],
+  "Graphics": "Windows/D3D11; QSG_RHI_DISABLE_DISK_CACHE=1 inside test host",
+  "ClipboardAccess": false,
+  "RealTrayAccess": false,
+  "Data": "QTemporaryDir copies of retained synthetic fixtures",
+  "FinishedUtc": "2026-10-13T14:34:04.9811387Z",
+  "HashesUnchanged": true
+}

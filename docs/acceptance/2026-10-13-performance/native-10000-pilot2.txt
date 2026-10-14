@@ -1,0 +1,12 @@
+********* Start testing of QmlAcceptance *********
+Config: Using QtTest library 6.11.1, Qt 6.11.1 (x86_64-little_endian-llp64 shared (dynamic) release build; by GCC 13.1.0), windows 10
+PASS   : QmlAcceptance::initTestCase()
+QWARN  : QmlAcceptance::optionalPerformance() QQmlApplicationEngine failed to load component
+QWARN  : QmlAcceptance::optionalPerformance() qrc:/qt/qml/ClipboardHistoryAcceptance/src/ui/Main.qml:7:1: Script qrc:/qt/qml/ClipboardHistoryAcceptance/src/ui/ThemePalette.js unavailable
+QWARN  : QmlAcceptance::optionalPerformance() qrc:/qt/qml/ClipboardHistoryAcceptance/src/ui/ThemePalette.js: No such file or directory
+FAIL!  : QmlAcceptance::optionalPerformance() '!engine->rootObjects().isEmpty()' returned FALSE. (qrc:/qt/qml/ClipboardHistoryAcceptance/src/ui/Main.qml:7:1: Script qrc:/qt/qml/ClipboardHistoryAcceptance/src/ui/ThemePalette.js unavailable
+qrc:/qt/qml/ClipboardHistoryAcceptance/src/ui/ThemePalette.js: No such file or directory)
+E:\Code\ClipBoardHistoryQT\tests\acceptance\tst_qml_acceptance.cpp(285) : failure location
+PASS   : QmlAcceptance::cleanupTestCase()
+Totals: 2 passed, 1 failed, 0 skipped, 0 blacklisted, 188ms
+********* Finished testing of QmlAcceptance *********

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCase name="QmlAcceptance">
+  <Environment>
+    <QtVersion>6.11.1</QtVersion>
+    <QtBuild>Qt 6.11.1 (x86_64&#x002D;little_endian&#x002D;llp64 shared (dynamic) release build; by GCC 13.1.0)</QtBuild>
+    <QTestVersion>6.11.1</QTestVersion>
+  </Environment>
+  <TestFunction name="initTestCase">
+    <Incident type="pass" file="" line="0" />
+    <Duration msecs="0.0381"/>
+  </TestFunction>
+  <TestFunction name="optionalSoak">
+  <Message type="qdebug" file="" line="0">
+    <Description><![CDATA[FT_New_Face failed with index 0 : 2]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=60013 ms scroll=1964 searches=30 cycles=6 rss=81432576 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=120002 ms scroll=3954 searches=60 cycles=12 rss=82997248 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=180073 ms scroll=5948 searches=90 cycles=18 rss=83148800 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=240017 ms scroll=7948 searches=119 cycles=24 rss=111771648 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=300009 ms scroll=9920 searches=149 cycles=30 rss=84455424 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=360007 ms scroll=11934 searches=179 cycles=36 rss=85417984 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=420000 ms scroll=13932 searches=209 cycles=42 rss=84742144 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=480012 ms scroll=15915 searches=239 cycles=48 rss=91230208 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=540089 ms scroll=17923 searches=269 cycles=54 rss=86081536 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=600024 ms scroll=19911 searches=298 cycles=60 rss=86233088 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=660007 ms scroll=21935 searches=328 cycles=66 rss=86847488 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=720024 ms scroll=23898 searches=358 cycles=72 rss=86532096 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=780009 ms scroll=25888 searches=388 cycles=78 rss=86724608 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=840226 ms scroll=27882 searches=418 cycles=84 rss=86695936 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=900019 ms scroll=29876 searches=447 cycles=90 rss=88223744 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=960009 ms scroll=31836 searches=477 cycles=96 rss=86863872 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1020003 ms scroll=33870 searches=507 cycles=102 rss=87867392 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1080022 ms scroll=35906 searches=537 cycles=108 rss=87171072 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1140001 ms scroll=37880 searches=567 cycles=114 rss=87228416 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1200004 ms scroll=39917 searches=596 cycles=120 rss=87388160 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1260025 ms scroll=41878 searches=626 cycles=126 rss=87437312 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1320008 ms scroll=43870 searches=656 cycles=132 rss=87339008 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1380020 ms scroll=45868 searches=686 cycles=138 rss=86630400 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1440015 ms scroll=47846 searches=716 cycles=144 rss=87433216 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1500356 ms scroll=49812 searches=746 cycles=150 rss=87576576 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1560013 ms scroll=51859 searches=775 cycles=156 rss=88674304 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1620009 ms scroll=53898 searches=805 cycles=162 rss=87830528 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1680017 ms scroll=55889 searches=835 cycles=168 rss=106385408 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance progress: elapsed=1740393 ms scroll=57886 searches=865 cycles=174 rss=87797760 bytes warnings=0]]></Description>
+  </Message>
+  <Message type="qinfo" file="" line="0">
+    <Description><![CDATA[Acceptance soak completed: 1800 seconds, 59869 scroll steps, 895 searches.]]></Description>
+  </Message>
+    <Incident type="pass" file="" line="0" />
+    <Duration msecs="1.80075e+06"/>
+  </TestFunction>
+  <TestFunction name="cleanupTestCase">
+    <Incident type="pass" file="" line="0" />
+    <Duration msecs="0.0069"/>
+  </TestFunction>
+  <Duration msecs="1.80075e+06"/>
+</TestCase>

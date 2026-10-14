@@ -1,0 +1,23 @@
+# CMake
+/build/
+/cmake-build-*/
+/dist/
+/profiler/traces/
+/CMakeUserPresets.json
+
+# Qt Creator
+*.user
+*.user.*
+
+# Generated Qt/QML artifacts
+/.qt/
+/qmltypes
+/qmldir
+
+# Runtime data when the executable is placed in the repository
+/data/
+/ClipboardHistory.ini
+
+# Qt Creator workspace state
+/.qtcreator/
+/.qtc_clangd/

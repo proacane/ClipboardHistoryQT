@@ -1,0 +1,28 @@
+.pragma library
+
+// Compiled fallback for partial imports; the editable runtime palette is custom-theme.json beside the executable.
+var custom = {
+    page: "#202936",
+    surface: "#293545",
+    sidebarSurface: "#202A38",
+    rowSurface: "#293545",
+    line: "#435166",
+    textMain: "#E8EEF5",
+    textMuted: "#AAB8C8",
+    accent: "#65B7A8",
+    selectedRow: "#34495C",
+    selectedText: "#E8EEF5",
+    inputSurface: "#1B2430",
+    tileSurface: "#354456",
+    tagSurface: "#354456",
+    danger: "#F09989",
+    dangerSurface: "#493338",
+    favorite: "#EAB308",
+    onAccent: "#FFFFFF",
+    kindAccent: {
+        "文本": "#62C6A5", "链接": "#6ABBE8", "文件": "#B6A0F7", "图片": "#EAB968"
+    },
+    kindTint: {
+        "文本": "#18382F", "链接": "#173247", "文件": "#302747", "图片": "#40351F"
+    }
+}

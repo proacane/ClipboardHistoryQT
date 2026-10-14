@@ -1,0 +1,2 @@
+#include "@CMAKE_CURRENT_SOURCE_DIR@/resources/app_icon.h"
+IDI_CLIPBOARD_HISTORY ICON "@CMAKE_CURRENT_SOURCE_DIR@/resources/app-icon.ico"

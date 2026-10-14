@@ -1,0 +1,117 @@
+{
+  "process_id": 47148,
+  "process_start_utc": "2026-10-12T10:50:09.4994346Z",
+  "executable": "E:\\Code\\ClipBoardHistoryQT\\build\\Desktop_Qt_6_11_1_MinGW_64_bit_RelWithDebInfo\\tst_qml_acceptance.exe",
+  "measurement": "External Windows Process.WorkingSet64 and PeakWorkingSet64; OS high-water mark is distinct from the harness approximately 1 Hz sampled maximum",
+  "completion_status": "completed; test process exited 0",
+  "observations": [
+    {
+      "timestamp_utc": "2026-10-12T11:03:11.1018389Z",
+      "elapsed_s": 781.606,
+      "cpu_s": 170.140625,
+      "working_set_bytes": 86933504,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:04:57.3433897Z",
+      "elapsed_s": 887.847,
+      "cpu_s": 193.578125,
+      "working_set_bytes": 86880256,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:06:33.3116466Z",
+      "elapsed_s": 983.816,
+      "cpu_s": 214.0625,
+      "working_set_bytes": 87085056,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:07:48.6865923Z",
+      "elapsed_s": 1059.191,
+      "cpu_s": 232.0,
+      "working_set_bytes": 86228992,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:09:09.8833756Z",
+      "elapsed_s": 1140.387,
+      "cpu_s": 249.015625,
+      "working_set_bytes": 87097344,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:10:17.327127Z",
+      "elapsed_s": 1207.831,
+      "cpu_s": 264.265625,
+      "working_set_bytes": 87150592,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:11:34.2538633Z",
+      "elapsed_s": 1284.758,
+      "cpu_s": 280.875,
+      "working_set_bytes": 86040576,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:12:52.0227529Z",
+      "elapsed_s": 1362.526,
+      "cpu_s": 297.890625,
+      "working_set_bytes": 87334912,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:14:11.8750519Z",
+      "elapsed_s": 1442.379,
+      "cpu_s": 315.140625,
+      "working_set_bytes": 87646208,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:15:29.3756756Z",
+      "elapsed_s": 1519.879,
+      "cpu_s": 332.3125,
+      "working_set_bytes": 88588288,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:17:27.6367999Z",
+      "elapsed_s": 1638.141,
+      "cpu_s": 359.234375,
+      "working_set_bytes": 86827008,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:18:40.415896Z",
+      "elapsed_s": 1710.92,
+      "cpu_s": 374.8125,
+      "working_set_bytes": 87818240,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    },
+    {
+      "timestamp_utc": "2026-10-12T11:19:39.027805Z",
+      "elapsed_s": 1769.532,
+      "cpu_s": 387.796875,
+      "working_set_bytes": 89079808,
+      "peak_working_set_bytes": 174895104,
+      "warning": false
+    }
+  ],
+  "exit_code": 0,
+  "finished_utc": "2026-10-12T11:20:10.305Z",
+  "peak_observed_bytes": 174895104.0,
+  "observation_caveat": "OS high-water mark last read at the final observation timestamp; no process measurement was possible after exit. Harness RSS values are approximately 1 Hz samples, not instantaneous peaks."
+}

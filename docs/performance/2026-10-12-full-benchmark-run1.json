@@ -1,0 +1,228 @@
+{
+    "created_utc": "2026-10-12T04:59:33Z",
+    "datasets": [
+        {
+            "database_bytes": 4800512,
+            "generator_version": 1,
+            "rows": 10000,
+            "seed": 3240042534,
+            "seed_time_ms_excluded_from_metrics": 44
+        },
+        {
+            "database_bytes": 48304128,
+            "generator_version": 1,
+            "rows": 100000,
+            "seed": 3240042534,
+            "seed_time_ms_excluded_from_metrics": 865
+        },
+        {
+            "database_bytes": 241983488,
+            "generator_version": 1,
+            "rows": 500000,
+            "seed": 3240042534,
+            "seed_time_ms_excluded_from_metrics": 7009
+        }
+    ],
+    "environment": {
+        "architecture": "x86_64",
+        "benchmark_volume_filesystem": "NTFS",
+        "benchmark_volume_total_bytes": 498581307392,
+        "build_type": "Release",
+        "clipboard_accessed": false,
+        "compiler": "13.1.0",
+        "dataset_root_removed_on_exit": true,
+        "disk_media_type": "not collected",
+        "gpu_model": "not collected",
+        "logical_processors": 32,
+        "os": "Windows 10 Version 22H2",
+        "os_build": "10.0.19045",
+        "physical_memory_bytes": 16337735680,
+        "processor_identifier": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+        "processor_model": "AMD Ryzen 9 7940HX with Radeon Graphics        ",
+        "qt_version": "6.11.1",
+        "samples_per_operation": 30,
+        "seed": 3240042534
+    },
+    "metrics": [
+        {
+            "dataset_rows": 10000,
+            "max_ms": 0.177,
+            "operation": "first_page_50",
+            "p50_ms": 0.1142,
+            "p95_ms": 0.1439,
+            "process_rss_bytes": 15233024,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 10000,
+            "max_ms": 0.3525,
+            "operation": "deep_page_50",
+            "p50_ms": 0.3384,
+            "p95_ms": 0.3483,
+            "process_rss_bytes": 15282176,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 10000,
+            "max_ms": 7.7882,
+            "operation": "search_hit",
+            "p50_ms": 7.211,
+            "p95_ms": 7.7805,
+            "process_rss_bytes": 17272832,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 10000,
+            "max_ms": 8.0537,
+            "operation": "search_miss",
+            "p50_ms": 7.2551,
+            "p95_ms": 7.8874,
+            "process_rss_bytes": 17272832,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 10000,
+            "max_ms": 9.9994,
+            "operation": "clear_history_and_images",
+            "p50_ms": 9.9994,
+            "p95_ms": 9.9994,
+            "process_rss_bytes": 15130624,
+            "samples": 1
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 0.1271,
+            "operation": "first_page_50",
+            "p50_ms": 0.0951,
+            "p95_ms": 0.1237,
+            "process_rss_bytes": 16154624,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 5.7752,
+            "operation": "deep_page_50",
+            "p50_ms": 5.0544,
+            "p95_ms": 5.4585,
+            "process_rss_bytes": 17752064,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 57.2089,
+            "operation": "search_hit",
+            "p50_ms": 54.8604,
+            "p95_ms": 56.4334,
+            "process_rss_bytes": 17838080,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 84.8421,
+            "operation": "search_miss",
+            "p50_ms": 78.3096,
+            "p95_ms": 79.8942,
+            "process_rss_bytes": 17838080,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 75.3266,
+            "operation": "clear_history_and_images",
+            "p50_ms": 75.3266,
+            "p95_ms": 75.3266,
+            "process_rss_bytes": 15855616,
+            "samples": 1
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 0.1301,
+            "operation": "first_page_50",
+            "p50_ms": 0.0954,
+            "p95_ms": 0.1146,
+            "process_rss_bytes": 16039936,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 27.7828,
+            "operation": "deep_page_50",
+            "p50_ms": 26.7593,
+            "p95_ms": 27.4335,
+            "process_rss_bytes": 18141184,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 63.2188,
+            "operation": "search_hit",
+            "p50_ms": 56.7731,
+            "p95_ms": 62.5695,
+            "process_rss_bytes": 18194432,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 410.5449,
+            "operation": "search_miss",
+            "p50_ms": 398.7877,
+            "p95_ms": 407.6064,
+            "process_rss_bytes": 18194432,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 373.9162,
+            "operation": "clear_history_and_images",
+            "p50_ms": 373.9162,
+            "p95_ms": 373.9162,
+            "process_rss_bytes": 15749120,
+            "samples": 1
+        },
+        {
+            "dataset_rows": 30,
+            "max_ms": 2.0655,
+            "operation": "record_text_unique_32b",
+            "p50_ms": 1.8172,
+            "p95_ms": 1.9788,
+            "process_rss_bytes": 16203776,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 30,
+            "max_ms": 2.4379,
+            "operation": "record_text_unique_16kb",
+            "p50_ms": 2.1098,
+            "p95_ms": 2.3021,
+            "process_rss_bytes": 16359424,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 1,
+            "max_ms": 2.76,
+            "operation": "record_text_duplicate",
+            "p50_ms": 1.7972,
+            "p95_ms": 2.1499,
+            "process_rss_bytes": 16199680,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 30,
+            "max_ms": 44.9121,
+            "operation": "record_image_unique_1080p",
+            "p50_ms": 38.815,
+            "p95_ms": 40.2284,
+            "process_rss_bytes": 16211968,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 30,
+            "max_ms": 150.684,
+            "operation": "record_image_unique_4k",
+            "p50_ms": 144.2761,
+            "p95_ms": 148.4028,
+            "process_rss_bytes": 16326656,
+            "samples": 30
+        }
+    ]
+}

@@ -1,0 +1,93 @@
+{
+  "source_report_sha256": "64276ad78c9647fa03888e0c371634d37a3d7794b273ea075299a126c7190298",
+  "elapsed_ms": 1800073,
+  "source_rows": 500000,
+  "scroll_steps": 59869,
+  "search_requests": 895,
+  "record_copy_delete_cycles": 179,
+  "rss_sampling": "approximately 1 Hz; sampled maximum is not an OS instantaneous high-water mark",
+  "rss_first_mib": 67.984375,
+  "rss_last_mib": 82.72265625,
+  "rss_sampled_peak_mib": 115.234375,
+  "rss_five_minute_bins": [
+    {
+      "start_minute": 0.0,
+      "end_minute": 5.0,
+      "samples": 300,
+      "median_mib": 79.111328125,
+      "p95_mib": 84.48828125,
+      "max_mib": 110.875
+    },
+    {
+      "start_minute": 5.0,
+      "end_minute": 10.0,
+      "samples": 300,
+      "median_mib": 81.892578125,
+      "p95_mib": 83.8984375,
+      "max_mib": 113.27734375
+    },
+    {
+      "start_minute": 10.0,
+      "end_minute": 15.0,
+      "samples": 300,
+      "median_mib": 82.76171875,
+      "p95_mib": 97.5703125,
+      "max_mib": 115.234375
+    },
+    {
+      "start_minute": 15.0,
+      "end_minute": 20.0,
+      "samples": 300,
+      "median_mib": 83.09375,
+      "p95_mib": 90.01953125,
+      "max_mib": 114.98828125
+    },
+    {
+      "start_minute": 20.0,
+      "end_minute": 25.0,
+      "samples": 300,
+      "median_mib": 83.431640625,
+      "p95_mib": 84.9453125,
+      "max_mib": 112.99609375
+    },
+    {
+      "start_minute": 25.0,
+      "end_minute": 30.0,
+      "samples": 300,
+      "median_mib": 83.73046875,
+      "p95_mib": 97.57421875,
+      "max_mib": 114.64453125
+    }
+  ],
+  "query_to_model": {
+    "benchmark-needle": {
+      "samples": 224,
+      "p50_ms": 63.66545,
+      "p95_ms": 77.7989,
+      "max_ms": 85.4845
+    },
+    "no-match-acceptance-unique-92719": {
+      "samples": 224,
+      "p50_ms": 419.4057,
+      "p95_ms": 431.4624,
+      "max_ms": 448.9459
+    },
+    "": {
+      "samples": 224,
+      "p50_ms": 11.64745,
+      "p95_ms": 22.1402,
+      "max_ms": 23.0148
+    },
+    "common-token": {
+      "samples": 223,
+      "p50_ms": 3.1932,
+      "p95_ms": 3.9977,
+      "max_ms": 4.7697
+    }
+  },
+  "shutdown_ms": 59.2743,
+  "qt_warnings": 0,
+  "qml_warnings": 0,
+  "source_and_binary_manifest_verified": true,
+  "scope": "offscreen software QML harness with real data core; no native clipboard/tray/hotkey/focus or GPU frame evidence"
+}

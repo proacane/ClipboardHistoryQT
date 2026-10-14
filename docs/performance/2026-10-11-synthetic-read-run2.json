@@ -1,0 +1,156 @@
+{
+    "created_utc": "2026-10-11T14:46:44Z",
+    "datasets": [
+        {
+            "database_bytes": 4800512,
+            "generator_version": 1,
+            "rows": 10000,
+            "seed": 3240042534,
+            "seed_time_ms_excluded_from_metrics": 47
+        },
+        {
+            "database_bytes": 48304128,
+            "generator_version": 1,
+            "rows": 100000,
+            "seed": 3240042534,
+            "seed_time_ms_excluded_from_metrics": 933
+        },
+        {
+            "database_bytes": 241983488,
+            "generator_version": 1,
+            "rows": 500000,
+            "seed": 3240042534,
+            "seed_time_ms_excluded_from_metrics": 7258
+        }
+    ],
+    "environment": {
+        "architecture": "x86_64",
+        "benchmark_volume_filesystem": "NTFS",
+        "benchmark_volume_total_bytes": 498581307392,
+        "build_type": "Release",
+        "clipboard_accessed": false,
+        "compiler": "13.1.0",
+        "dataset_root_removed_on_exit": true,
+        "disk_media_type": "not collected",
+        "gpu_model": "not collected",
+        "logical_processors": 32,
+        "os": "Windows 10 Version 22H2",
+        "os_build": "10.0.19045",
+        "physical_memory_bytes": 16337735680,
+        "processor_identifier": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+        "processor_model": "AMD Ryzen 9 7940HX with Radeon Graphics        ",
+        "qt_version": "6.11.1",
+        "samples_per_operation": 30,
+        "seed": 3240042534
+    },
+    "metrics": [
+        {
+            "dataset_rows": 10000,
+            "max_ms": 0.152,
+            "operation": "first_page_50",
+            "p50_ms": 0.1222,
+            "p95_ms": 0.1344,
+            "process_rss_bytes": 15048704,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 10000,
+            "max_ms": 0.3785,
+            "operation": "deep_page_50",
+            "p50_ms": 0.3566,
+            "p95_ms": 0.3777,
+            "process_rss_bytes": 15097856,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 10000,
+            "max_ms": 8.6477,
+            "operation": "search_hit",
+            "p50_ms": 8.0159,
+            "p95_ms": 8.2801,
+            "process_rss_bytes": 17063936,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 10000,
+            "max_ms": 8.8344,
+            "operation": "search_miss",
+            "p50_ms": 7.9228,
+            "p95_ms": 8.3763,
+            "process_rss_bytes": 17063936,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 0.1369,
+            "operation": "first_page_50",
+            "p50_ms": 0.1068,
+            "p95_ms": 0.1157,
+            "process_rss_bytes": 15749120,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 6.0947,
+            "operation": "deep_page_50",
+            "p50_ms": 5.4745,
+            "p95_ms": 6.0828,
+            "process_rss_bytes": 17559552,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 65.7166,
+            "operation": "search_hit",
+            "p50_ms": 59.1323,
+            "p95_ms": 65.1116,
+            "process_rss_bytes": 17592320,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 100000,
+            "max_ms": 91.5303,
+            "operation": "search_miss",
+            "p50_ms": 83.7318,
+            "p95_ms": 89.3683,
+            "process_rss_bytes": 17592320,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 0.1355,
+            "operation": "first_page_50",
+            "p50_ms": 0.1029,
+            "p95_ms": 0.1138,
+            "process_rss_bytes": 16072704,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 30.588,
+            "operation": "deep_page_50",
+            "p50_ms": 28.306,
+            "p95_ms": 29.3869,
+            "process_rss_bytes": 18030592,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 62.1571,
+            "operation": "search_hit",
+            "p50_ms": 58.6187,
+            "p95_ms": 61.6327,
+            "process_rss_bytes": 18067456,
+            "samples": 30
+        },
+        {
+            "dataset_rows": 500000,
+            "max_ms": 424.9938,
+            "operation": "search_miss",
+            "p50_ms": 409.3961,
+            "p95_ms": 423.5777,
+            "process_rss_bytes": 18067456,
+            "samples": 30
+        }
+    ]
+}

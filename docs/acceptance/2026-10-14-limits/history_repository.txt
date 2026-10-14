@@ -1,0 +1,23 @@
+********* Start testing of HistoryRepositoryTest *********
+Config: Using QtTest library 6.11.1, Qt 6.11.1 (x86_64-little_endian-llp64 shared (dynamic) release build; by GCC 13.1.0), windows 10
+PASS   : HistoryRepositoryTest::initTestCase()
+PASS   : HistoryRepositoryTest::quantityLimitKeepsNewestAndFavoritesAndCombinesWithTime()
+PASS   : HistoryRepositoryTest::retentionProtectsFavoritesAndCutoffAndBatches()
+PASS   : HistoryRepositoryTest::retentionRollsBackOnDeleteFailure()
+PASS   : HistoryRepositoryTest::initializesAndPersistsEntries()
+PASS   : HistoryRepositoryTest::pagesInStableOrder()
+PASS   : HistoryRepositoryTest::previewPagesBoundContentSize()
+PASS   : HistoryRepositoryTest::previewSearchAndKindFilters()
+PASS   : HistoryRepositoryTest::favoritesAndMutationTransactions()
+PASS   : HistoryRepositoryTest::incrementsExactDuplicateUsage()
+PASS   : HistoryRepositoryTest::migratesVersionOneUsageCount()
+PASS   : HistoryRepositoryTest::migratesVersionTwoContentHash()
+PASS   : HistoryRepositoryTest::migratesVersionThreeFavorites()
+PASS   : HistoryRepositoryTest::rejectsInvalidArguments()
+PASS   : HistoryRepositoryTest::rejectsCallsFromAnotherThread()
+PASS   : HistoryRepositoryTest::migratesVersionZeroSchema()
+PASS   : HistoryRepositoryTest::rejectsFutureSchema()
+PASS   : HistoryRepositoryTest::rejectsCorruptDatabase()
+PASS   : HistoryRepositoryTest::cleanupTestCase()
+Totals: 19 passed, 0 failed, 0 skipped, 0 blacklisted, 1758ms
+********* Finished testing of HistoryRepositoryTest *********

@@ -1,0 +1,478 @@
+{
+    "build_type": "RelWithDebInfo",
+    "cache_buffer": 0,
+    "compiler": "13.1.0",
+    "cpu_architecture": "x86_64",
+    "elapsed_ms": 60148,
+    "final_row_count_verified": 500000,
+    "finished_utc": "2026-10-12T10:33:05.473Z",
+    "image_fixture": "solid color plus unique pixel; includes 1080p/4K, not a complex screenshot benchmark",
+    "os": "Windows 10 Version 22H2",
+    "qml_warning_count": 0,
+    "qt_version": "6.11.1",
+    "qt_warning_count": 0,
+    "qt_warnings": [
+    ],
+    "rendering": "offscreen software; not desktop frame-performance evidence",
+    "reuse_items": false,
+    "rss_samples": [
+        {
+            "elapsed_ms": 328,
+            "rss_bytes": 70324224
+        },
+        {
+            "elapsed_ms": 1011,
+            "rss_bytes": 72802304
+        },
+        {
+            "elapsed_ms": 2023,
+            "rss_bytes": 73252864
+        },
+        {
+            "elapsed_ms": 3027,
+            "rss_bytes": 71102464
+        },
+        {
+            "elapsed_ms": 4016,
+            "rss_bytes": 71102464
+        },
+        {
+            "elapsed_ms": 5009,
+            "rss_bytes": 74096640
+        },
+        {
+            "elapsed_ms": 6002,
+            "rss_bytes": 74489856
+        },
+        {
+            "elapsed_ms": 7006,
+            "rss_bytes": 73805824
+        },
+        {
+            "elapsed_ms": 8023,
+            "rss_bytes": 74141696
+        },
+        {
+            "elapsed_ms": 9010,
+            "rss_bytes": 74432512
+        },
+        {
+            "elapsed_ms": 10197,
+            "rss_bytes": 72777728
+        },
+        {
+            "elapsed_ms": 11001,
+            "rss_bytes": 72138752
+        },
+        {
+            "elapsed_ms": 12016,
+            "rss_bytes": 72138752
+        },
+        {
+            "elapsed_ms": 13016,
+            "rss_bytes": 75640832
+        },
+        {
+            "elapsed_ms": 14007,
+            "rss_bytes": 75792384
+        },
+        {
+            "elapsed_ms": 15015,
+            "rss_bytes": 75235328
+        },
+        {
+            "elapsed_ms": 16023,
+            "rss_bytes": 75657216
+        },
+        {
+            "elapsed_ms": 17028,
+            "rss_bytes": 75939840
+        },
+        {
+            "elapsed_ms": 18003,
+            "rss_bytes": 76591104
+        },
+        {
+            "elapsed_ms": 19016,
+            "rss_bytes": 74371072
+        },
+        {
+            "elapsed_ms": 20896,
+            "rss_bytes": 85258240
+        },
+        {
+            "elapsed_ms": 21022,
+            "rss_bytes": 82247680
+        },
+        {
+            "elapsed_ms": 22004,
+            "rss_bytes": 83816448
+        },
+        {
+            "elapsed_ms": 23007,
+            "rss_bytes": 83230720
+        },
+        {
+            "elapsed_ms": 24009,
+            "rss_bytes": 83787776
+        },
+        {
+            "elapsed_ms": 25017,
+            "rss_bytes": 83857408
+        },
+        {
+            "elapsed_ms": 26027,
+            "rss_bytes": 83890176
+        },
+        {
+            "elapsed_ms": 27013,
+            "rss_bytes": 84074496
+        },
+        {
+            "elapsed_ms": 28015,
+            "rss_bytes": 81129472
+        },
+        {
+            "elapsed_ms": 29009,
+            "rss_bytes": 84291584
+        },
+        {
+            "elapsed_ms": 30006,
+            "rss_bytes": 86573056
+        },
+        {
+            "elapsed_ms": 31028,
+            "rss_bytes": 83927040
+        },
+        {
+            "elapsed_ms": 32006,
+            "rss_bytes": 84697088
+        },
+        {
+            "elapsed_ms": 33010,
+            "rss_bytes": 84791296
+        },
+        {
+            "elapsed_ms": 34008,
+            "rss_bytes": 84819968
+        },
+        {
+            "elapsed_ms": 35018,
+            "rss_bytes": 84815872
+        },
+        {
+            "elapsed_ms": 36013,
+            "rss_bytes": 84840448
+        },
+        {
+            "elapsed_ms": 37008,
+            "rss_bytes": 86061056
+        },
+        {
+            "elapsed_ms": 38006,
+            "rss_bytes": 86085632
+        },
+        {
+            "elapsed_ms": 39007,
+            "rss_bytes": 85016576
+        },
+        {
+            "elapsed_ms": 40018,
+            "rss_bytes": 85635072
+        },
+        {
+            "elapsed_ms": 41013,
+            "rss_bytes": 85680128
+        },
+        {
+            "elapsed_ms": 42029,
+            "rss_bytes": 86003712
+        },
+        {
+            "elapsed_ms": 43064,
+            "rss_bytes": 85999616
+        },
+        {
+            "elapsed_ms": 44029,
+            "rss_bytes": 85999616
+        },
+        {
+            "elapsed_ms": 45005,
+            "rss_bytes": 86040576
+        },
+        {
+            "elapsed_ms": 46020,
+            "rss_bytes": 87269376
+        },
+        {
+            "elapsed_ms": 47003,
+            "rss_bytes": 86323200
+        },
+        {
+            "elapsed_ms": 48023,
+            "rss_bytes": 86482944
+        },
+        {
+            "elapsed_ms": 49019,
+            "rss_bytes": 86667264
+        },
+        {
+            "elapsed_ms": 50008,
+            "rss_bytes": 86695936
+        },
+        {
+            "elapsed_ms": 51129,
+            "rss_bytes": 87040000
+        },
+        {
+            "elapsed_ms": 52000,
+            "rss_bytes": 87048192
+        },
+        {
+            "elapsed_ms": 53007,
+            "rss_bytes": 87154688
+        },
+        {
+            "elapsed_ms": 54010,
+            "rss_bytes": 88301568
+        },
+        {
+            "elapsed_ms": 55014,
+            "rss_bytes": 87302144
+        },
+        {
+            "elapsed_ms": 56010,
+            "rss_bytes": 87425024
+        },
+        {
+            "elapsed_ms": 57010,
+            "rss_bytes": 87781376
+        },
+        {
+            "elapsed_ms": 58025,
+            "rss_bytes": 88100864
+        },
+        {
+            "elapsed_ms": 59235,
+            "rss_bytes": 88215552
+        }
+    ],
+    "scroll_steps": 1861,
+    "search_samples": [
+        {
+            "elapsed_ms": 323,
+            "query": "benchmark-needle",
+            "query_executed": true,
+            "query_to_model_ms": 77.1879,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 2840,
+            "query": "no-match-acceptance-unique-92719",
+            "query_executed": true,
+            "query_to_model_ms": 434.4537,
+            "rows_loaded": 0
+        },
+        {
+            "elapsed_ms": 4293,
+            "query": "",
+            "query_executed": true,
+            "query_to_model_ms": 11.5464,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 6320,
+            "query": "common-token",
+            "query_executed": true,
+            "query_to_model_ms": 2.9147,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 8393,
+            "query": "benchmark-needle",
+            "query_executed": true,
+            "query_to_model_ms": 77.5302,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 10778,
+            "query": "no-match-acceptance-unique-92719",
+            "query_executed": true,
+            "query_to_model_ms": 456.0746,
+            "rows_loaded": 0
+        },
+        {
+            "elapsed_ms": 12361,
+            "query": "",
+            "query_executed": true,
+            "query_to_model_ms": 21.0972,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 14361,
+            "query": "common-token",
+            "query_executed": true,
+            "query_to_model_ms": 3.4372,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 16420,
+            "query": "benchmark-needle",
+            "query_executed": true,
+            "query_to_model_ms": 73.3785,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 18831,
+            "query": "no-match-acceptance-unique-92719",
+            "query_executed": true,
+            "query_to_model_ms": 454.74,
+            "rows_loaded": 0
+        },
+        {
+            "elapsed_ms": 20893,
+            "query": "",
+            "query_executed": true,
+            "query_to_model_ms": 21.644,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 22444,
+            "query": "common-token",
+            "query_executed": true,
+            "query_to_model_ms": 2.4344,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 24543,
+            "query": "benchmark-needle",
+            "query_executed": true,
+            "query_to_model_ms": 64.2293,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 26859,
+            "query": "no-match-acceptance-unique-92719",
+            "query_executed": true,
+            "query_to_model_ms": 426.2702,
+            "rows_loaded": 0
+        },
+        {
+            "elapsed_ms": 28510,
+            "query": "",
+            "query_executed": true,
+            "query_to_model_ms": 11.1365,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 30523,
+            "query": "common-token",
+            "query_executed": true,
+            "query_to_model_ms": 2.8131,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 32597,
+            "query": "benchmark-needle",
+            "query_executed": true,
+            "query_to_model_ms": 76.5294,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 34936,
+            "query": "no-match-acceptance-unique-92719",
+            "query_executed": true,
+            "query_to_model_ms": 421.1977,
+            "rows_loaded": 0
+        },
+        {
+            "elapsed_ms": 36588,
+            "query": "",
+            "query_executed": true,
+            "query_to_model_ms": 12.0607,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 38600,
+            "query": "common-token",
+            "query_executed": true,
+            "query_to_model_ms": 3.836,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 40665,
+            "query": "benchmark-needle",
+            "query_executed": true,
+            "query_to_model_ms": 78.0624,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 43064,
+            "query": "no-match-acceptance-unique-92719",
+            "query_executed": true,
+            "query_to_model_ms": 426.7404,
+            "rows_loaded": 0
+        },
+        {
+            "elapsed_ms": 44663,
+            "query": "",
+            "query_executed": true,
+            "query_to_model_ms": 11.1592,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 46674,
+            "query": "common-token",
+            "query_executed": true,
+            "query_to_model_ms": 3.8124,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 48751,
+            "query": "benchmark-needle",
+            "query_executed": true,
+            "query_to_model_ms": 63.4415,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 51129,
+            "query": "no-match-acceptance-unique-92719",
+            "query_executed": true,
+            "query_to_model_ms": 421.4761,
+            "rows_loaded": 0
+        },
+        {
+            "elapsed_ms": 52716,
+            "query": "",
+            "query_executed": true,
+            "query_to_model_ms": 11.5587,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 54713,
+            "query": "common-token",
+            "query_executed": true,
+            "query_to_model_ms": 2.7109,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 56792,
+            "query": "benchmark-needle",
+            "query_executed": true,
+            "query_to_model_ms": 62.2266,
+            "rows_loaded": 50
+        },
+        {
+            "elapsed_ms": 59235,
+            "query": "no-match-acceptance-unique-92719",
+            "query_executed": true,
+            "query_to_model_ms": 424.1473,
+            "rows_loaded": 0
+        }
+    ],
+    "shutdown_ms": 62.2564,
+    "source_rows": 500000,
+    "started_utc": "2026-10-12T10:32:05.324Z",
+    "test_function_timeout_ms": "120000",
+    "verified_record_copy_delete_cycles": 6
+}
