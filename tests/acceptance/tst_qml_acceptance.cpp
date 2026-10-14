@@ -347,7 +347,11 @@ void QmlAcceptance::expandsAndCollapsesFullTextAndImage()
     QCOMPARE(expandedText->property("textFormat").toInt(), 0); // Text.PlainText
     QObject *header = qmlContext(textDelegate)->objectForName("entryHeader");
     QVERIFY(header);
-    QVERIFY(header->property("visible").toBool());
+    QVERIFY(!header->property("visible").toBool());
+    QObject *title = qmlContext(textDelegate)->objectForName("entryTitle");
+    QVERIFY(title);
+    QCOMPARE(expandedText->property("font"), title->property("font"));
+    QCOMPARE(expandedText->property("color"), title->property("color"));
     QObject *scroll = qmlContext(textDelegate)->objectForName("expandedTextScroll");
     QVERIFY(scroll);
     QCOMPARE(scroll->property("padding").toDouble(), 0.0);
@@ -369,6 +373,7 @@ void QmlAcceptance::expandsAndCollapsesFullTextAndImage()
     QVERIFY(QMetaObject::invokeMethod(collapseButton, "clicked"));
     QCOMPARE(window->property("expandedEntryId").toLongLong(), 0);
     QTRY_COMPARE(evaluate("clipList.itemAtIndex(0).height").toDouble(), compactHeight);
+    QVERIFY(header->property("visible").toBool());
 
     const qint64 imageId = model->data(model->index(1, 0), HistoryModel::IdRole).toLongLong();
     evaluate("clipList.positionViewAtIndex(1, ListView.Beginning)");

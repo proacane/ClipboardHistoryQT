@@ -1188,7 +1188,7 @@ ApplicationWindow {
 
                     RowLayout {
                         id: entryHeader
-                        visible: !expanded || kind !== "图片"
+                        visible: !expanded
                         Layout.fillWidth: true
                         Layout.preferredHeight: 38
                         spacing: 10
@@ -1282,8 +1282,26 @@ ApplicationWindow {
                         visible: expanded && kind !== "图片"
                         Layout.fillWidth: true
                         spacing: 10
-                        Item {
+                        Rectangle {
                             Layout.preferredWidth: 34
+                            Layout.preferredHeight: 34
+                            Layout.alignment: Qt.AlignTop
+                            radius: 10
+                            color: window.kindTint(kind)
+                            border.color: window.line
+                            Text {
+                                anchors.centerIn: parent
+                                text: symbol
+                                color: window.kindAccent(kind)
+                                font.pixelSize: 17
+                                font.bold: true
+                            }
+                            TapHandler {
+                                onTapped: {
+                                    clipList.currentIndex = index
+                                    historyModel.copyItem(index)
+                                }
+                            }
                         }
                         ScrollView {
                             id: expandedTextScroll
@@ -1302,9 +1320,8 @@ ApplicationWindow {
                                 text: window.expandedEntryLoadFailed ? "完整内容读取失败，请收起后重试。" :
                                       (window.expandedEntryText.length > 0 ? window.expandedEntryText : "正在加载完整内容…")
                                 textFormat: Text.PlainText
-                                color: ListView.isCurrentItem ? window.selectedText : window.textMain
-                                font.pixelSize: 12
-                                font.weight: Font.Normal
+                                color: entryTitle.color
+                                font: entryTitle.font
                                 lineHeight: 1.5
                                 lineHeightMode: Text.ProportionalHeight
                                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
@@ -1360,7 +1377,7 @@ ApplicationWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 8
                             Rectangle {
-                                visible: expanded && kind === "图片"
+                                visible: expanded
                                 width: footerKindLabel.implicitWidth + 12
                                 height: 19
                                 radius: 6
@@ -1374,7 +1391,7 @@ ApplicationWindow {
                                 }
                             }
                             Text {
-                                visible: uses.length > 0 && expanded && kind === "图片"
+                                visible: uses.length > 0 && expanded
                                 text: uses
                                 color: window.textMuted
                                 font.pixelSize: 11

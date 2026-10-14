@@ -1,0 +1,29 @@
+********* Start testing of QmlAcceptance *********
+Config: Using QtTest library 6.11.1, Qt 6.11.1 (x86_64-little_endian-llp64 shared (dynamic) release build; by GCC 13.1.0), windows 10
+PASS   : QmlAcceptance::initTestCase()
+PASS   : QmlAcceptance::expandsAndCollapsesFullTextAndImage()
+PASS   : QmlAcceptance::changesThemesAndSettings()
+PASS   : QmlAcceptance::createsSettingsAndConfirmationsOnDemand()
+PASS   : QmlAcceptance::storesGraphicsCachesInDataDirectory()
+PASS   : QmlAcceptance::configuresAndPersistsRetention()
+PASS   : QmlAcceptance::configuresAndPersistsQuantityLimit()
+PASS   : QmlAcceptance::configuresStartupWithWindows()
+PASS   : QmlAcceptance::closeDialogRemembersChoice()
+PASS   : QmlAcceptance::capturesPreviousHotkeyWithoutHiding()
+PASS   : QmlAcceptance::showsHotkeyFailureAndRestoresPrevious()
+PASS   : QmlAcceptance::showsStartupHotkeyFailure(occupied)
+PASS   : QmlAcceptance::showsStartupHotkeyFailure(system-error)
+PASS   : QmlAcceptance::reportsFailedHotkeyRestore()
+PASS   : QmlAcceptance::themePreviewsKeepFixedWidth()
+PASS   : QmlAcceptance::importsThemesAsIndependentFiles()
+PASS   : QmlAcceptance::retriesLegacyThemeMigrationWithoutDataLoss()
+FAIL!  : QmlAcceptance::categoryContentsAreCentered() 'qAbs(center.x() - button->width() / 2) < 0.6' returned FALSE. (ÎÄ±¾)
+E:\Code\ClipBoardHistoryQT\tests\acceptance\tst_qml_acceptance.cpp(837) : failure location
+PASS   : QmlAcceptance::mouseWheelStopsAtHistoryBounds()
+SKIP   : QmlAcceptance::optionalSoak() Opt-in soak: set CLIPBOARDHISTORY_ACCEPTANCE_SOAK_SECONDS and optional synthetic DB path.
+E:\Code\ClipBoardHistoryQT\tests\acceptance\tst_qml_acceptance.cpp(880) : failure location
+SKIP   : QmlAcceptance::optionalPerformance() Opt-in performance scenario: provide isolated synthetic fixture and row count.
+E:\Code\ClipBoardHistoryQT\tests\acceptance\tst_qml_acceptance.cpp(1057) : failure location
+PASS   : QmlAcceptance::cleanupTestCase()
+Totals: 19 passed, 1 failed, 2 skipped, 0 blacklisted, 11411ms
+********* Finished testing of QmlAcceptance *********
