@@ -2,6 +2,8 @@
 
 用户授权上传源代码并公开，确认在 proacane 下新建 ClipboardHistoryQT、使用 MIT。旧 ClipboardHistory 仓库保留。
 
+已创建公开仓库：https://github.com/proacane/ClipboardHistoryQT 。本地 origin 已连接新仓库，main 已推送并跟踪 origin/main。公开上传包含源代码、开发文档和合成测试证据，未上传 dist 便携包或实际用户数据。
+
 README 改为中文，覆盖真实功能、便携数据目录与迁移、Qt Creator/命令行 Release 构建、测试边界、开发状态、架构和贡献入口。主题章节按 Main.qml.parseCustomTheme 与 AppPaths 的当前实现编写，涵盖四个必填字段、全部可选字段、内容类型颜色、UTF-8/64 KiB 限制、导入/命名/保存/重启及完整示例链接。未宣称支持系统跟随主题、Linux 后端、数据库加密或正式性能验收。
 
 按用户选择加入根目录 MIT LICENSE，第三方开发技能保留自身版权，Qt 分发材料不由项目 MIT 替代。开发规范和 ADR 增补本次许可决策。
