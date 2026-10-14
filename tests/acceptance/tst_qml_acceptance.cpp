@@ -345,6 +345,21 @@ void QmlAcceptance::expandsAndCollapsesFullTextAndImage()
     QVERIFY(expandedText);
     QCOMPARE(expandedText->property("text").toString(), fullText);
     QCOMPARE(expandedText->property("textFormat").toInt(), 0); // Text.PlainText
+    QObject *header = qmlContext(textDelegate)->objectForName("entryHeader");
+    QVERIFY(header);
+    QVERIFY(header->property("visible").toBool());
+    QObject *scroll = qmlContext(textDelegate)->objectForName("expandedTextScroll");
+    QVERIFY(scroll);
+    QCOMPARE(scroll->property("padding").toDouble(), 0.0);
+    QVERIFY(!qvariant_cast<QObject *>(scroll->property("background")));
+    QTRY_VERIFY(scroll->property("contentWidth").toDouble() <= scroll->property("availableWidth").toDouble());
+    QVERIFY(scroll->property("height").toDouble() <= 300.0);
+    const auto screenshot = qEnvironmentVariable("CLIPBOARDHISTORY_EXPANSION_SCREENSHOT");
+    if (!screenshot.isEmpty()) {
+        evaluate("window.expandedEntryText = 'E:\\\\ClipboardHistory\\\\sqldrivers\\nE:\\\\ClipboardHistory\\\\tls\\nE:\\\\ClipboardHistory\\\\ClipboardHistory.exe\\nE:\\\\ClipboardHistory\\\\custom-theme.json\\nE:\\\\ClipboardHistory\\\\Qt6Core.dll'");
+        QTest::qWait(150);
+        QVERIFY(window->grabWindow().save(screenshot));
+    }
     QObject *collapseButton = qmlContext(textDelegate)->objectForName("expandToggleButton");
     QVERIFY(collapseButton);
     QVERIFY(collapseButton->property("visible").toBool());

@@ -1187,7 +1187,8 @@ ApplicationWindow {
                     spacing: 8
 
                     RowLayout {
-                        visible: !expanded
+                        id: entryHeader
+                        visible: !expanded || kind !== "图片"
                         Layout.fillWidth: true
                         Layout.preferredHeight: 38
                         spacing: 10
@@ -1281,36 +1282,30 @@ ApplicationWindow {
                         visible: expanded && kind !== "图片"
                         Layout.fillWidth: true
                         spacing: 10
-                        Rectangle {
+                        Item {
                             Layout.preferredWidth: 34
-                            Layout.preferredHeight: 34
-                            Layout.alignment: Qt.AlignTop
-                            radius: 10
-                            color: window.tileSurface
-                            Text { anchors.centerIn: parent; text: symbol; color: window.accent; font.pixelSize: 17 }
                         }
                         ScrollView {
                             id: expandedTextScroll
                             Layout.fillWidth: true
-                            Layout.preferredHeight: Math.min(300, Math.max(72, expandedText.implicitHeight + 20))
+                            Layout.preferredHeight: Math.min(300, Math.max(48, expandedText.implicitHeight))
                             clip: true
-                            padding: 10
+                            padding: 0
+                            rightPadding: 12
+                            contentWidth: availableWidth
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                             ScrollBar.vertical.policy: ScrollBar.AsNeeded
-                            background: Rectangle {
-                                radius: 8
-                                color: window.inputSurface
-                                border.color: window.line
-                            }
+                            background: null
                             Text {
                                 id: expandedText
                                 width: expandedTextScroll.availableWidth
                                 text: window.expandedEntryLoadFailed ? "完整内容读取失败，请收起后重试。" :
                                       (window.expandedEntryText.length > 0 ? window.expandedEntryText : "正在加载完整内容…")
                                 textFormat: Text.PlainText
-                                color: window.textMain
-                                font.pixelSize: 13
+                                color: ListView.isCurrentItem ? window.selectedText : window.textMain
+                                font.pixelSize: 12
                                 font.weight: Font.Normal
-                                lineHeight: 1.3
+                                lineHeight: 1.5
                                 lineHeightMode: Text.ProportionalHeight
                                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                                 Accessible.role: Accessible.StaticText
@@ -1365,21 +1360,21 @@ ApplicationWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 8
                             Rectangle {
-                                visible: expanded
+                                visible: expanded && kind === "图片"
                                 width: footerKindLabel.implicitWidth + 12
                                 height: 19
                                 radius: 6
-                                color: window.tagSurface
+                                color: window.kindTint(kind)
                                 Text {
                                     id: footerKindLabel
                                     anchors.centerIn: parent
                                     text: kind
-                                    color: window.accent
+                                    color: window.kindAccent(kind)
                                     font.pixelSize: 11
                                 }
                             }
                             Text {
-                                visible: uses.length > 0 && expanded
+                                visible: uses.length > 0 && expanded && kind === "图片"
                                 text: uses
                                 color: window.textMuted
                                 font.pixelSize: 11
