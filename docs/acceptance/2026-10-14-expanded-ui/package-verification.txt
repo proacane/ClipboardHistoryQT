@@ -1,6 +1,0 @@
-Release 包：ClipboardHistory-Windows10-x64-Release-20261014-expanded-ui.zip
-源代码提交：9296ab3
-SHA256：F5B656AA70CE0A27BED5C9BFEE825D2946F95030A3A14974E7B88CF2ABA8AF09
-ZIP 所有文件内容与打包目录 SHA256 逐一匹配；无 data、用户配置、测试程序或 Qt6Test.dll。
-生产程序 SHA256：549d2f0f58b55c5d1b16e2d9c2127acae64afd3051f31785275e97e66b71b1f4
-原生 UI 验收使用新编译的内嵌 QML 测试程序与同版 Qt 依赖，未启动生产主程序。

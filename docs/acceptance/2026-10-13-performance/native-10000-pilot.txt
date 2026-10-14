@@ -1,8 +1,0 @@
-********* Start testing of QmlAcceptance *********
-Config: Using QtTest library 6.11.1, Qt 6.11.1 (x86_64-little_endian-llp64 shared (dynamic) release build; by GCC 13.1.0), windows 10
-PASS   : QmlAcceptance::initTestCase()
-FAIL!  : QmlAcceptance::optionalPerformance() 'QFile::copy(source, directory.filePath("history.sqlite3"))' returned FALSE. ()
-E:\Code\ClipBoardHistoryQT\tests\acceptance\tst_qml_acceptance.cpp(245) : failure location
-PASS   : QmlAcceptance::cleanupTestCase()
-Totals: 2 passed, 1 failed, 0 skipped, 0 blacklisted, 2ms
-********* Finished testing of QmlAcceptance *********

@@ -1,7 +1,0 @@
-{
-  "ExitCode": 0,
-  "TestSHA256": "002DA943F0030B9888A5CEC766CBB9BA7F19686AEF5C7336961B1ED2246E07E1",
-  "TestSourceSHA256": "3949BC279BA3FDAE597F26F168138FB99E4C10FDF46F024129ABA86D02D543D6",
-  "MainExecutableUnchanged": true,
-  "Change": "Test-only shutdown: destroy QQuickWindow/render thread before frame callback locals leave scope; measured source archived separately"
-}

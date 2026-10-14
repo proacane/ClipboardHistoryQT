@@ -1,7 +1,0 @@
-********* Start testing of QmlAcceptance *********
-Config: Using QtTest library 6.11.1, Qt 6.11.1 (x86_64-little_endian-llp64 shared (dynamic) release build; by GCC 13.1.0), windows 10
-PASS   : QmlAcceptance::initTestCase()
-PASS   : QmlAcceptance::expandsAndCollapsesFullTextAndImage()
-PASS   : QmlAcceptance::cleanupTestCase()
-Totals: 3 passed, 0 failed, 0 skipped, 0 blacklisted, 1073ms
-********* Finished testing of QmlAcceptance *********

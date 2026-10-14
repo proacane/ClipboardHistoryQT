@@ -4,7 +4,6 @@
 
 这是 [ClipboardHistory](https://github.com/proacane/ClipboardHistory) 的重构项目，当前优先支持 Windows 10，采用 **MIT** 许可证。Linux 平台集成尚未完成。
 
-![展开记录界面，展示内容为合成测试数据](docs/acceptance/2026-10-14-expanded-text/expanded.png)
 
 ## 功能
 
@@ -111,7 +110,7 @@ data/
 }
 ```
 
-可复制 [完整主题示例](docs/custom-theme.example.json) 或 [默认模板](resources/custom-theme.json) 开始修改。
+可复制 [完整默认模板](resources/custom-theme.json) 开始修改。
 
 也可退出程序后编辑程序旁的 `custom-theme.json`，重启并选择对应基础自定义主题。此文件只在缺失时生成，构建不会覆盖已有修改。直接编辑 `themes/` 中的文件后同样需重启重新读取；再次导入会创建新选项。
 
@@ -130,7 +129,7 @@ data/
 ### 依赖
 
 - Qt **6.11 或 6.12**；当前验证 Qt 6.11.1。
-- Qt Core、Gui、Quick、Quick Controls 2、Quick Dialogs 2、Sql；Windows 还使用 Network；测试需 Qt Test。
+- Qt Core、Gui、Quick、Quick Controls 2、Quick Dialogs 2、Sql；Windows 还使用 Network。
 - CMake 3.21+，C++17 编译器，工具链须与 Qt kit 匹配。
 - 当前验证 Windows kit：MinGW 64-bit / GCC 13.1。
 
@@ -149,7 +148,7 @@ $env:PATH = "C:\Qt\6.11.1\mingw_64\bin;C:\Qt\Tools\mingw1310_64\bin;" + $env:PAT
 $taskBuildDir = ".\build\Release"
 & "C:\Qt\Tools\CMake_64\bin\cmake.exe" -S . -B $taskBuildDir `
   -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release `
-  -DCMAKE_PREFIX_PATH="C:/Qt/6.11.1/mingw_64" -DBUILD_TESTING=OFF
+  -DCMAKE_PREFIX_PATH="C:/Qt/6.11.1/mingw_64"
 & "C:\Qt\Tools\CMake_64\bin\cmake.exe" --build $taskBuildDir --parallel 4
 & "$taskBuildDir\ClipboardHistory.exe"
 ```
@@ -158,19 +157,11 @@ $taskBuildDir = ".\build\Release"
 
 向未安装 Qt 的电脑提供程序时，须部署 Qt DLL、QML 和插件，不能只复制 EXE。可使用 kit 的 `windeployqt --release --qmldir src/ui` 部署到独立目录，并带上 `custom-theme.json`；保持 Qt 与编译器运行库版本一致。
 
-## 测试与性能
+## 验证状态
 
-将构建目录的 `BUILD_TESTING` 设为 `ON` 并重新配置/构建，再运行：
+本公开仓库提供主程序源代码，测试、性能基准、内部开发文档及 agent 配置保留在本地开发环境，不参与主程序编译。直接拉取本仓库后即可使用 Qt Creator 或上述命令构建，无需 Qt Test。
 
-```powershell
-& "C:\Qt\Tools\CMake_64\bin\ctest.exe" --test-dir $taskBuildDir --output-on-failure
-```
-
-11 个模块覆盖数据库、图片、服务、队列、模型、采集、路径/配置、日志、旧库导入、QML 和 Windows 平台。QML 默认采用离屏渲染、临时合成数据与平台替身，不监听真实剪贴板、不注册真实全局快捷键、不建立真实托盘。测试程序不随便携包分发。
-
-独立性能模块按需启用 `CLIPBOARDHISTORY_BUILD_BENCHMARKS=ON`；数据生成、测量和门槛见 [开发测试规范](docs/development-spec.md) 及 [性能记录](docs/performance/)。
-
-**当前为试用阶段，完整性能及发布验收尚未通过。**截至 2026-10-14，最新 Release CTest 为 11/11 通过，文本/图片展开原生专项通过；原生全量 UI 检查还有分类按钮居中精度断言失败。历史 50 万条无结果搜索有超候选目标记录；主程序冷启动、持续 GPU 帧时间、长期后台资源、全部 DPI 和干净系统部署仍需补充验证。见 [最新 UI 交接](docs/handoffs/EXPANDED-TEXT-2026-10-14.md) 与 [性能优化交接](docs/handoffs/PERFORMANCE-OPTIMIZATION-2026-10-13.md)。
+当前仍为试用阶段，完整性能及发布验收尚未通过。最新本地 Release 的 11 个 CTest 模块和文本/图片展开原生专项通过；原生全量 UI 检查还有分类按钮居中精度断言失败。50 万条无结果搜索曾超出候选目标；主程序冷启动、持续 GPU 帧时间、长期后台资源、全部 DPI 及干净系统部署仍需补充验证。
 
 ## 代码结构与贡献
 
@@ -183,14 +174,11 @@ src/core/logging/      独立隐私日志模块
 src/platform/windows/ 托盘、热键、单实例、自启动、焦点恢复
 src/ui/                QML 页面、主题默认值
 resources/             图标、主题模板
-tests/                 模块及交互验收
-benchmarks/            隔离性能测量
-docs/                  规范、决策、测试证据和交接
 ```
 
 QML 负责呈现及交互，C++ 负责采集、平台和业务，存储任务在后台队列执行。纯样式调整通常集中在 QML；接口或业务变化须同步核心和测试。
 
-欢迎通过 [Issues](https://github.com/proacane/ClipboardHistoryQT/issues) 提交建议或复现步骤。请注明系统、Qt/构建版本、操作步骤及预期结果，分享前移除截图、数据库及日志中的私人内容。贡献前阅读 [开发规范](docs/development-spec.md)。
+欢迎通过 [Issues](https://github.com/proacane/ClipboardHistoryQT/issues) 提交建议或复现步骤。请注明系统、Qt/构建版本、操作步骤及预期结果，分享前移除截图、数据库及日志中的私人内容。提交修改时请说明影响范围和验证方式。
 
 ## 许可证与致谢
 
