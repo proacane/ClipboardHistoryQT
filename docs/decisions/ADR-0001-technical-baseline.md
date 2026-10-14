@@ -31,6 +31,8 @@
 
 ## 依赖现状
 
+2026-10-14 发布更新：用户确认本项目原创代码使用 MIT，见根目录 LICENSE 与 THIRD_PARTY_NOTICES.md。自动保留、数量上限、登录自启动及本地 Git 提交已实现；下文部分待定项为早期决策历史，最新状态以 README 与 development-spec.md 为准。
+
 Windows 当前使用系统 RegisterHotKey、原生托盘和 Qt QLocalServer，没有 QHotkey 依赖，也没有 IHotkeyBackend 接口。旧版 QHotkey 可作为未来 Linux 方案参考；若决定引入，再固定来源、修订号和许可证。Linux 后端尚未实现。
 
 AppSettings 和 PrivacyLogger 已有独立模块测试，但 main/QML 尚未使用这两个模块。当前 UI 外观设置直接使用 QtCore.Settings；不能把模块 schema/隐私 canary 测试当作应用集成证据。
