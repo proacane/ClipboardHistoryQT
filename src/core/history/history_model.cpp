@@ -29,6 +29,18 @@ HistoryModel::HistoryModel(HistoryTaskQueue *queue, QString imagesDirectory, QOb
     : QAbstractListModel(parent), m_queue(queue), m_imagesDirectory(std::move(imagesDirectory))
 {
     Q_ASSERT(m_queue);
+    connect(m_queue, &HistoryTaskQueue::noteCompleted, this,
+            [this](qint64 id, const QString &note, const HistoryMutationResult &result) {
+        if (result.status) {
+            for (int row = 0; row < m_entries.size(); ++row) {
+                if (m_entries[row].id != id) continue;
+                m_entries[row].note = note;
+                emit dataChanged(index(row, 0), index(row, 0), {NoteRole});
+                break;
+            }
+        }
+        emit noteSaveFinished(id, static_cast<bool>(result.status));
+    });
     connect(m_queue, &HistoryTaskQueue::pageReady, this, &HistoryModel::onPageReady);
     connect(m_queue, &HistoryTaskQueue::recordCompleted, this,
             [this](const HistoryRecordResult &result) {
@@ -105,6 +117,7 @@ QVariant HistoryModel::data(const QModelIndex &index, int role) const
             : entry.kind == QStringLiteral("image") ? QStringLiteral("▧")
                                                     : QStringLiteral("▤");
     case FavoriteRole: return entry.favorite;
+    case NoteRole: return entry.note;
     case ExpandableRole: return entry.truncated;
     case ImageUrlRole:
         return entry.kind == QStringLiteral("image")
@@ -120,7 +133,7 @@ QHash<int, QByteArray> HistoryModel::roleNames() const
     return {{IdRole, "entryId"}, {ClipTextRole, "clipText"}, {KindRole, "kind"},
             {TimeRole, "time"}, {UsesRole, "uses"}, {SymbolRole, "symbol"},
             {FavoriteRole, "favorite"}, {ExpandableRole, "expandable"}, {ImageUrlRole, "imageUrl"},
-            {SourceMissingRole, "sourceMissing"}};
+            {SourceMissingRole, "sourceMissing"}, {NoteRole, "note"}};
 }
 
 bool HistoryModel::canFetchMore(const QModelIndex &parent) const
@@ -163,6 +176,11 @@ void HistoryModel::setFilter(const QString &search, const QString &kind)
     m_search = search;
     m_kind = kind;
     refresh();
+}
+
+bool HistoryModel::setNoteById(qint64 id, const QString &note)
+{
+    return m_queue && m_queue->setNote(id, note);
 }
 
 void HistoryModel::setFavorite(int row, bool favorite)

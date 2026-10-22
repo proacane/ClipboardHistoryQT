@@ -22,6 +22,7 @@ public slots:
     void loadEntry(qint64 id);
     void copyEntry(qint64 id);
     void setFavorite(qint64 id, bool favorite);
+    void setNote(qint64 id, const QString &note);
     void remove(qint64 id);
     void clear();
     void setRetentionHours(int hours);
@@ -30,6 +31,7 @@ public slots:
     void shutdown();
 
 signals:
+    void noteCompleted(qint64 id, const QString &note, const ClipboardHistory::Core::HistoryMutationResult &result);
     void initialized(const ClipboardHistory::Core::HistoryServiceStatus &status);
     void recordCompleted(const ClipboardHistory::Core::HistoryRecordResult &result);
     void pageReady(const ClipboardHistory::Core::HistoryPreviewPage &page);

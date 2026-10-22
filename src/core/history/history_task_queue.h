@@ -25,6 +25,7 @@ public:
     bool loadEntry(qint64 id);
     bool requestCopy(qint64 id);
     bool setFavorite(qint64 id, bool favorite);
+    bool setNote(qint64 id, const QString &note);
     bool remove(qint64 id);
     bool clear();
     bool setRetentionHours(int hours);
@@ -36,6 +37,8 @@ public:
     static constexpr qsizetype maxOutstandingBytes() { return 64 * 1024 * 1024; }
 
 signals:
+    void noteRequested(qint64 id, const QString &note);
+    void noteCompleted(qint64 id, const QString &note, const ClipboardHistory::Core::HistoryMutationResult &result);
     void initializeRequested();
     void recordRequested(const ClipboardHistory::Core::HistoryCapture &capture);
     void pageRequested(qint64 offset, qint64 limit, const QString &search, const QString &kind,

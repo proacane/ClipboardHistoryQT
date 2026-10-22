@@ -58,6 +58,12 @@ void HistoryWorker::loadEntry(qint64 id)
                                    : HistoryCopyResult{{HistoryServiceError::NotInitialized}, {}, {}, {}});
 }
 
+void HistoryWorker::setNote(qint64 id, const QString &note)
+{
+    emit noteCompleted(id, note, m_service ? m_service->setNote(id, note)
+                      : HistoryMutationResult{{HistoryServiceError::NotInitialized}});
+}
+
 void HistoryWorker::setFavorite(qint64 id, bool favorite)
 {
     emit mutationCompleted(m_service ? m_service->setFavorite(id, favorite)

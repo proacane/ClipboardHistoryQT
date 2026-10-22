@@ -125,6 +125,16 @@ HistoryCopyResult HistoryService::copyEntry(qint64 id)
     return loadEntry(id);
 }
 
+HistoryMutationResult HistoryService::setNote(qint64 id, const QString &note)
+{
+    if (QThread::currentThread() != m_ownerThread)
+        return {failure(HistoryServiceError::WrongThread)};
+    if (!m_initialized) return {failure(HistoryServiceError::NotInitialized)};
+    const auto status = m_repository.setNote(id, note);
+    return {status ? HistoryServiceStatus{}
+                   : HistoryServiceStatus{HistoryServiceError::RepositoryFailure, status.error}};
+}
+
 HistoryMutationResult HistoryService::setFavorite(qint64 id, bool favorite)
 {
     if (QThread::currentThread() != m_ownerThread)

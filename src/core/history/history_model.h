@@ -35,7 +35,8 @@ public:
         FavoriteRole,
         ExpandableRole,
         ImageUrlRole,
-        SourceMissingRole
+        SourceMissingRole,
+        NoteRole
     };
     Q_ENUM(Role)
 
@@ -60,12 +61,14 @@ public:
     Q_INVOKABLE void loadEntry(qint64 id);
     Q_INVOKABLE void setFilter(const QString &search, const QString &kind);
     Q_INVOKABLE void setFavorite(int row, bool favorite);
+    Q_INVOKABLE bool setNoteById(qint64 id, const QString &note);
     Q_INVOKABLE void removeItem(int row);
     Q_INVOKABLE void removeItemById(qint64 id);
     Q_INVOKABLE void clearHistory();
     Q_INVOKABLE bool importLegacyDatabase(const QString &databaseFilePath);
 
 signals:
+    void noteSaveFinished(qint64 id, bool success);
     void maximumEntriesChanged();
     void retentionHoursChanged();
     void retentionCompleted(qint64 removedCount, bool cleanupPending);

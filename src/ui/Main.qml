@@ -128,10 +128,23 @@ ApplicationWindow {
     }
 
     function copySucceeded(message) {
-        window.historyMessage = message
+        let resultMessage = message
+        let warning = false
         if (Qt.platform.os === "windows" && appearanceSettings.autoPasteIntoPreviousWindow
-                && !windowsPlatform.pasteToPreviousWindow())
-            window.historyMessage = "已复制到剪贴板，但未能自动粘贴。"
+                && !windowsPlatform.pasteToPreviousWindow()) {
+            resultMessage = "已复制到剪贴板，但未能自动粘贴。"
+            warning = true
+        }
+        window.historyMessage = resultMessage
+        window.showCopyNotification(resultMessage, warning)
+    }
+
+    function showCopyNotification(message, failed) {
+        if (!appearanceSettings.copyNotificationsEnabled) return
+        copyNotification.message = message
+        copyNotification.failed = failed
+        copyNotification.visible = true
+        copyNotificationTimer.restart()
     }
 
     function refreshFilteredHistory() {
@@ -646,6 +659,69 @@ ApplicationWindow {
         }
     }
 
+    function editNote(entryId, text) {
+        noteDialogLoader.active = true
+        noteDialogLoader.item.edit(entryId, text)
+    }
+
+    component SettingsNumberInput: SpinBox {
+        id: numberInput
+        required property var themeTokens
+        implicitHeight: 36
+        leftPadding: 36
+        rightPadding: 36
+        editable: true
+        opacity: enabled ? 1 : 0.55
+        contentItem: TextInput {
+            text: numberInput.displayText
+            font.pixelSize: 12
+            color: numberInput.themeTokens.textMain
+            selectionColor: numberInput.themeTokens.accent
+            selectedTextColor: numberInput.themeTokens.onAccent
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            readOnly: !numberInput.editable
+            validator: numberInput.validator
+            inputMethodHints: Qt.ImhDigitsOnly
+            clip: true
+        }
+        down.indicator: Rectangle {
+            x: 4
+            y: (numberInput.height - height) / 2
+            implicitWidth: 28
+            implicitHeight: 28
+            radius: 5
+            color: numberInput.down.pressed ? numberInput.themeTokens.selectedRow
+                 : numberInput.down.hovered ? numberInput.themeTokens.tileSurface : "transparent"
+            Text {
+                anchors.centerIn: parent
+                text: "−"
+                font.pixelSize: 18
+                color: numberInput.down.enabled ? numberInput.themeTokens.textMain : numberInput.themeTokens.textMuted
+            }
+        }
+        up.indicator: Rectangle {
+            x: numberInput.width - width - 4
+            y: (numberInput.height - height) / 2
+            implicitWidth: 28
+            implicitHeight: 28
+            radius: 5
+            color: numberInput.up.pressed ? numberInput.themeTokens.selectedRow
+                 : numberInput.up.hovered ? numberInput.themeTokens.tileSurface : "transparent"
+            Text {
+                anchors.centerIn: parent
+                text: "+"
+                font.pixelSize: 18
+                color: numberInput.up.enabled ? numberInput.themeTokens.textMain : numberInput.themeTokens.textMuted
+            }
+        }
+        background: Rectangle {
+            radius: 7
+            color: numberInput.themeTokens.inputSurface
+            border.color: numberInput.activeFocus ? numberInput.themeTokens.accent : numberInput.themeTokens.line
+        }
+    }
+
     component SettingsActionButton: Button {
         id: actionButton
         required property var themeTokens
@@ -705,6 +781,13 @@ ApplicationWindow {
         property string customThemeJson: ""
         property string globalHotkey: "Ctrl+Shift+V"
         property bool autoPasteIntoPreviousWindow: true
+        property bool copyNotificationsEnabled: true
+        onCopyNotificationsEnabledChanged: {
+            if (!copyNotificationsEnabled && copyNotification && copyNotificationTimer) {
+                copyNotificationTimer.stop()
+                copyNotification.hide()
+            }
+        }
         property bool startWithWindows: false
         property string closeAction: "ask"
         property int maximumEntries: 0
@@ -780,8 +863,14 @@ ApplicationWindow {
 
     Connections {
         target: historyModel
-        function onCopyFailed() { window.historyMessage = "复制失败，请重试。" }
-        function onCopySourceMissing() { window.historyMessage = "源文件已不存在，无法复制到剪贴板。" }
+        function onCopyFailed() {
+            window.historyMessage = "复制失败，请重试。"
+            window.showCopyNotification(window.historyMessage, true)
+        }
+        function onCopySourceMissing() {
+            window.historyMessage = "源文件已不存在，无法复制到剪贴板。"
+            window.showCopyNotification(window.historyMessage, true)
+        }
         function onCopyContentReady(kind, content) { window.copySucceeded("已复制到剪贴板。") }
         function onCopyImageReady(image) { window.copySucceeded("已复制图片到剪贴板。") }
         function onEntryContentLoaded(entryId, kind, content) {
@@ -813,6 +902,65 @@ ApplicationWindow {
         target: clipboardCapture
         function onRecordFailed(result) { window.historyMessage = "保存剪贴板内容失败。" }
         function onInitializationFailed(status) { window.historyMessage = "历史数据库初始化失败。" }
+    }
+
+    Window {
+        id: copyNotification
+        transientParent: null
+        flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+               | Qt.WindowDoesNotAcceptFocus | Qt.WindowTransparentForInput
+        visible: false
+        color: "transparent"
+        title: "复制结果提示"
+        property string message: ""
+        property bool failed: false
+        width: Math.min(420, window.width - 40)
+        height: copyNotificationContent.implicitHeight + 32
+        x: window.x + (window.width - width) / 2
+        y: window.y + window.height - height - 48
+        Rectangle {
+            anchors.fill: parent
+            radius: 12
+            color: window.surface
+            border.width: 2
+            border.color: copyNotification.failed ? window.dangerColor : window.accent
+            RowLayout {
+                id: copyNotificationContent
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 12
+                Rectangle {
+                    Layout.preferredWidth: 32
+                    Layout.preferredHeight: 32
+                    radius: 8
+                    color: copyNotification.failed ? window.dangerSurface : window.tagSurface
+                    Text {
+                        anchors.centerIn: parent
+                        text: copyNotification.failed ? "!" : "✓"
+                        color: copyNotification.failed ? window.dangerColor : window.accent
+                        font.pixelSize: 20
+                        font.bold: true
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: copyNotification.message
+                    textFormat: Text.PlainText
+                    color: window.textMain
+                    font.pixelSize: 13
+                    font.weight: Font.DemiBold
+                    wrapMode: Text.Wrap
+                    Accessible.role: Accessible.AlertMessage
+                    Accessible.name: text
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: copyNotificationTimer
+        interval: copyNotification.failed ? 3500 : 2000
+        onTriggered: copyNotification.hide()
     }
 
     Timer {
@@ -1157,6 +1305,7 @@ ApplicationWindow {
                 required property bool favorite
                 required property bool expandable
                 required property bool sourceMissing
+                required property string note
                 required property int index
                 required property var entryId
 
@@ -1317,7 +1466,7 @@ ApplicationWindow {
                             Text {
                                 id: expandedText
                                 width: expandedTextScroll.availableWidth
-                                text: window.expandedEntryLoadFailed ? "完整内容读取失败，请收起后重试。" :
+                                text: !expanded ? "" : window.expandedEntryLoadFailed ? "完整内容读取失败，请收起后重试。" :
                                       (window.expandedEntryText.length > 0 ? window.expandedEntryText : "正在加载完整内容…")
                                 textFormat: Text.PlainText
                                 color: entryTitle.color
@@ -1367,6 +1516,32 @@ ApplicationWindow {
                             color: window.textMuted
                             font.pixelSize: 11
                         }
+                    }
+
+                    Rectangle {
+                        visible: note.length > 0
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 32
+                        radius: 7
+                        color: window.tagSurface
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 8
+                            Text { text: "备注"; color: window.accent; font.pixelSize: 11 }
+                            Text {
+                                Layout.fillWidth: true
+                                text: note.replace(/[\r\n]+/g, " ")
+                                textFormat: Text.PlainText
+                                color: window.textMuted
+                                font.pixelSize: 11
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                            }
+                        }
+                        Accessible.role: Accessible.Button
+                        Accessible.name: "编辑备注：" + note
+                        TapHandler { onTapped: window.editNote(entryId, note) }
                     }
 
                     Item {
@@ -1430,6 +1605,22 @@ ApplicationWindow {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 2
+                            ToolButton {
+                                id: noteButton
+                                text: "备注"
+                                Accessible.name: note.length > 0 ? "编辑备注" : "添加备注"
+                                implicitWidth: 42
+                                implicitHeight: 29
+                                contentItem: Text {
+                                    text: noteButton.text
+                                    color: note.length > 0 ? window.accent : window.textMuted
+                                    font.pixelSize: 11
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                background: Rectangle { radius: 8; color: noteButton.hovered ? window.tileSurface : "transparent" }
+                                onClicked: window.editNote(entryId, note)
+                            }
                             Text {
                                 text: time
                                 color: window.textMuted
@@ -1673,6 +1864,116 @@ ApplicationWindow {
             if (selectedPath.length > 0) {
                 window.pendingStorageDirectory = selectedPath
                 window.storageError = ""
+            }
+        }
+    }
+
+    Loader {
+        id: noteDialogLoader
+        active: false
+        sourceComponent: Dialog {
+            id: noteDialog
+            parent: window.contentItem
+            anchors.centerIn: parent
+            width: Math.min(window.width - 48, 480)
+            modal: true
+            property var entryId: 0
+            property bool saving: false
+            property string errorText: ""
+            closePolicy: saving ? Popup.NoAutoClose : Popup.CloseOnEscape
+            function edit(id, text) {
+                entryId = id
+                noteEditor.text = text
+                saving = false
+                errorText = ""
+                open()
+                noteEditor.forceActiveFocus()
+            }
+            background: Rectangle { radius: 10; color: window.surface; border.color: window.line }
+            header: Text {
+                text: "条目备注"
+                padding: 16
+                color: window.textMain
+                font.pixelSize: 16
+                font.weight: Font.DemiBold
+            }
+            contentItem: ColumnLayout {
+                spacing: 10
+                Text { text: "仅作为备注保存，不会复制到剪贴板。"; color: window.textMuted; font.pixelSize: 11 }
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 160
+                    contentWidth: availableWidth
+                    clip: true
+                    TextArea {
+                        id: noteEditor
+                        enabled: !noteDialog.saving
+                        wrapMode: TextEdit.Wrap
+                        textFormat: TextEdit.PlainText
+                        selectByMouse: true
+                        placeholderText: "写下用途、来源或提醒…"
+                        Accessible.name: "备注内容，最多 2000 字"
+                        color: window.textMain
+                        placeholderTextColor: window.textMuted
+                        selectionColor: window.accent
+                        selectedTextColor: window.onAccent
+                        font.pixelSize: 12
+                        padding: 10
+                        background: Rectangle {
+                            radius: 7
+                            color: window.inputSurface
+                            border.color: noteEditor.activeFocus ? window.accent : window.line
+                        }
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: noteDialog.errorText.length > 0 ? noteDialog.errorText : noteEditor.length + " / 2000 · 留空并保存可移除备注"
+                    color: noteDialog.errorText.length > 0 || noteEditor.length > 2000 ? window.dangerColor : window.textMuted
+                    wrapMode: Text.Wrap
+                    font.pixelSize: 11
+                }
+            }
+            footer: Item {
+                implicitHeight: 60
+                RowLayout {
+                anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+                    Item { Layout.fillWidth: true }
+                    SettingsActionButton {
+                        themeTokens: window
+                        Layout.preferredWidth: 76
+                        text: "取消"
+                        enabled: !noteDialog.saving
+                        onClicked: noteDialog.reject()
+                    }
+                    SettingsActionButton {
+                        id: noteSaveButton
+                        themeTokens: window
+                        Layout.preferredWidth: 76
+                        text: noteDialog.saving ? "保存中…" : "保存"
+                        primaryAction: true
+                        enabled: !noteDialog.saving && noteEditor.length <= 2000
+                        onClicked: {
+                            noteDialog.saving = true
+                            noteDialog.errorText = ""
+                            if (!historyModel.setNoteById(noteDialog.entryId, noteEditor.text)) {
+                                noteDialog.saving = false
+                                noteDialog.errorText = "暂时无法保存，请稍后重试。"
+                            }
+                        }
+                }
+                }
+            }
+            Connections {
+                target: historyModel
+                function onNoteSaveFinished(id, success) {
+                    if (id !== noteDialog.entryId || !noteDialog.saving) return
+                    noteDialog.saving = false
+                    if (success) noteDialog.accept()
+                    else noteDialog.errorText = "保存失败，记录可能已被删除；备注内容仍保留在此。"
+                }
             }
         }
     }
@@ -2385,6 +2686,26 @@ ApplicationWindow {
 
             SettingsSection {
                 Layout.fillWidth: true
+                heading: "复制结果提示"
+                description: "醒目提示复制成功或失败，稍后自动消失"
+                iconText: "✓"
+                iconColor: window.accent
+                surfaceColor: window.surface
+                borderColor: window.line
+                titleColor: window.textMain
+                subtitleColor: window.textMuted
+                ThemeCheckBox {
+                    id: copyNotificationsToggle
+                    themeTokens: window
+                    text: "显示复制结果提示"
+                    checked: appearanceSettings.copyNotificationsEnabled
+                    Accessible.name: text
+                    onToggled: appearanceSettings.copyNotificationsEnabled = checked
+                }
+            }
+
+            SettingsSection {
+                Layout.fillWidth: true
                 visible: Qt.platform.os === "windows"
                 heading: "全局快捷键"
                 description: "呼出历史面板并控制复制后的粘贴行为"
@@ -2499,8 +2820,9 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         spacing: 12
                         Text { text: "保留最近"; color: window.textMain }
-                        SpinBox {
+                        SettingsNumberInput {
                             id: retentionDuration
+                            themeTokens: window
                             Layout.preferredWidth: 140
                             enabled: retentionEnabled.checked
                             from: 1
@@ -2508,14 +2830,7 @@ ApplicationWindow {
                             value: appearanceSettings.retentionHours > 0
                                    ? (retentionUnit.currentIndex === 1 ? appearanceSettings.retentionHours / 24
                                                                        : appearanceSettings.retentionHours) : 30
-                            editable: true
-                            palette.text: window.textMain
-                            palette.buttonText: window.textMain
-                            palette.button: window.inputSurface
-                            palette.base: window.inputSurface
-                            palette.highlight: window.accent
                             Accessible.name: "非收藏历史保留时长"
-                            background: Rectangle { radius: 5; color: window.inputSurface; border.color: parent.activeFocus ? window.accent : window.line }
                         }
                         ComboBox {
                             id: retentionUnit
@@ -2594,21 +2909,15 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         spacing: 12
                         Text { text: "最多保存"; color: window.textMain }
-                        SpinBox {
+                        SettingsNumberInput {
                             id: maximumEntriesValue
+                            themeTokens: window
                             Layout.preferredWidth: 160
                             enabled: maximumEntriesEnabled.checked
                             from: 1
                             to: 2147483647
                             value: appearanceSettings.maximumEntries > 0 ? appearanceSettings.maximumEntries : 10000
-                            editable: true
-                            palette.text: window.textMain
-                            palette.buttonText: window.textMain
-                            palette.button: window.inputSurface
-                            palette.base: window.inputSurface
-                            palette.highlight: window.accent
                             Accessible.name: "历史总条目数量上限"
-                            background: Rectangle { radius: 5; color: window.inputSurface; border.color: parent.activeFocus ? window.accent : window.line }
                         }
                         Text { text: "条"; color: window.textMain }
                         Item { Layout.fillWidth: true }

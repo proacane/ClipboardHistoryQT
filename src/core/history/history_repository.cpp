@@ -14,7 +14,7 @@
 namespace ClipboardHistory::Core {
 namespace {
 
-constexpr int SchemaVersion = 5;
+constexpr int SchemaVersion = 6;
 
 RepositoryStatus failure(RepositoryError error)
 {
@@ -183,6 +183,10 @@ RepositoryStatus HistoryRepository::initialize()
                 else if (!query.exec(QStringLiteral("PRAGMA user_version = 4")))
                     setupError = RepositoryError::SqlError;
             }
+            if (setupError == RepositoryError::None && schemaVersion < 6
+                && !query.exec(QStringLiteral(
+                    "ALTER TABLE history_entries ADD COLUMN note TEXT NOT NULL DEFAULT ''")))
+                setupError = RepositoryError::SqlError;
             if (setupError == RepositoryError::None
                 && (!query.exec(QStringLiteral(
                         "CREATE TABLE IF NOT EXISTS legacy_import_sources ("
@@ -197,7 +201,7 @@ RepositoryStatus HistoryRepository::initialize()
                         "ON history_entries(favorite, created_at_ms_utc, id)"))
                     || !query.exec(QStringLiteral(
                         "CREATE INDEX IF NOT EXISTS history_entries_image_ref_idx ON history_entries(image_ref)"))
-                    || !query.exec(QStringLiteral("PRAGMA user_version = 5")))) {
+                    || !query.exec(QStringLiteral("PRAGMA user_version = 6")))) {
                 setupError = RepositoryError::SqlError;
             }
         }
@@ -472,7 +476,7 @@ RepositoryStatus HistoryRepository::get(qint64 id, HistoryEntry& entry)
 
     QSqlQuery query(m_database);
     query.prepare(QStringLiteral(
-        "SELECT id, kind, content, image_ref, created_at_ms_utc, usage_count, favorite "
+        "SELECT id, kind, content, image_ref, created_at_ms_utc, usage_count, favorite, note "
         "FROM history_entries WHERE id = :id"));
     query.bindValue(QStringLiteral(":id"), id);
     if (!query.exec())
@@ -487,6 +491,7 @@ RepositoryStatus HistoryRepository::get(qint64 id, HistoryEntry& entry)
     entry.createdAtMsUtc = query.value(4).toLongLong();
     entry.usageCount = query.value(5).toLongLong();
     entry.favorite = query.value(6).toBool();
+    entry.note = query.value(7).toString();
     return {};
 }
 
@@ -534,7 +539,7 @@ HistoryPage HistoryRepository::page(qint64 offset, qint64 limit)
 
     QSqlQuery query(m_database);
     query.prepare(QStringLiteral(
-        "SELECT id, kind, content, image_ref, created_at_ms_utc, usage_count, favorite "
+        "SELECT id, kind, content, image_ref, created_at_ms_utc, usage_count, favorite, note "
         "FROM history_entries "
         "ORDER BY created_at_ms_utc DESC, id DESC LIMIT :limit OFFSET :offset"));
     query.bindValue(QStringLiteral(":limit"), limit);
@@ -553,6 +558,7 @@ HistoryPage HistoryRepository::page(qint64 offset, qint64 limit)
         entry.createdAtMsUtc = query.value(4).toLongLong();
         entry.usageCount = query.value(5).toLongLong();
         entry.favorite = query.value(6).toBool();
+        entry.note = query.value(7).toString();
         result.entries.append(std::move(entry));
     }
     if (query.lastError().isValid()) {
@@ -595,7 +601,7 @@ HistoryPreviewPage HistoryRepository::previewPage(qint64 offset, qint64 limit,
     query.prepare(QStringLiteral(
         "SELECT id, kind, substr(content, 1, :previewLength + 1), image_ref, "
         "created_at_ms_utc, usage_count, length(content) > :previewLength, favorite, "
-        "CASE WHEN kind = 'path' THEN content ELSE '' END "
+        "CASE WHEN kind = 'path' THEN content ELSE '' END, note "
         "FROM history_entries WHERE (:filterKind = 0 OR (:kind = 'favorite' AND favorite = 1) OR kind = :kind) "
         "AND (:filterSearch = 0 OR instr(lower(content), lower(:search)) > 0) "
         "ORDER BY created_at_ms_utc DESC, id DESC LIMIT :limit OFFSET :offset"));
@@ -621,6 +627,7 @@ HistoryPreviewPage HistoryRepository::previewPage(qint64 offset, qint64 limit,
         entry.usageCount = query.value(5).toLongLong();
         entry.truncated = query.value(6).toBool();
         entry.favorite = query.value(7).toBool();
+        entry.note = query.value(9).toString();
         if (entry.kind == QStringLiteral("path"))
             entry.sourcePaths = query.value(8).toString().split(QLatin1Char('\n'), Qt::SkipEmptyParts);
         if (entry.truncated)
@@ -632,6 +639,19 @@ HistoryPreviewPage HistoryRepository::previewPage(qint64 offset, qint64 limit,
         result.status = failure(RepositoryError::SqlError);
     }
     return result;
+}
+
+RepositoryStatus HistoryRepository::setNote(qint64 id, const QString &note)
+{
+    if (const auto status = checkThread(); !status) return status;
+    if (!m_database.isOpen()) return failure(RepositoryError::NotInitialized);
+    if (id <= 0 || note.size() > maxNoteLength()) return failure(RepositoryError::InvalidArgument);
+    QSqlQuery query(m_database);
+    query.prepare(QStringLiteral("UPDATE history_entries SET note = :note WHERE id = :id"));
+    query.bindValue(QStringLiteral(":note"), note.isNull() ? QStringLiteral("") : note);
+    query.bindValue(QStringLiteral(":id"), id);
+    if (!query.exec()) return failure(RepositoryError::SqlError);
+    return query.numRowsAffected() == 1 ? RepositoryStatus{} : failure(RepositoryError::NotFound);
 }
 
 RepositoryStatus HistoryRepository::setFavorite(qint64 id, bool favorite)

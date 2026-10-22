@@ -155,6 +155,9 @@ int main(int argc, char *argv[])
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());
         if (window) {
             window->setGraphicsConfiguration(graphicsConfiguration);
+            // Auxiliary feedback windows must use the same portable cache location.
+            for (auto *auxiliary : window->findChildren<QQuickWindow *>())
+                auxiliary->setGraphicsConfiguration(graphicsConfiguration);
             window->show();
         }
     }

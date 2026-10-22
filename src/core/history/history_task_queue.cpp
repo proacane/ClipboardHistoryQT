@@ -21,6 +21,8 @@ HistoryTaskQueue::HistoryTaskQueue(QString databaseFilePath, QString imagesDirec
             Qt::QueuedConnection);
     connect(this, &HistoryTaskQueue::copyRequested, m_worker, &HistoryWorker::copyEntry,
             Qt::QueuedConnection);
+    connect(this, &HistoryTaskQueue::noteRequested, m_worker, &HistoryWorker::setNote, Qt::QueuedConnection);
+    connect(m_worker, &HistoryWorker::noteCompleted, this, &HistoryTaskQueue::noteCompleted, Qt::QueuedConnection);
     connect(this, &HistoryTaskQueue::favoriteRequested, m_worker, &HistoryWorker::setFavorite,
             Qt::QueuedConnection);
     connect(this, &HistoryTaskQueue::removeRequested, m_worker, &HistoryWorker::remove,
@@ -103,6 +105,13 @@ bool HistoryTaskQueue::loadEntry(qint64 id)
     if (!m_ready || m_stopping || id <= 0)
         return false;
     emit entryLoadRequested(id);
+    return true;
+}
+
+bool HistoryTaskQueue::setNote(qint64 id, const QString &note)
+{
+    if (!m_ready || m_stopping || id <= 0 || note.size() > HistoryRepository::maxNoteLength()) return false;
+    emit noteRequested(id, note);
     return true;
 }
 

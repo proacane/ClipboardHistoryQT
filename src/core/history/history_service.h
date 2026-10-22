@@ -76,6 +76,7 @@ public:
     HistoryCopyResult loadEntry(qint64 id);
     HistoryCopyResult copyEntry(qint64 id);
     HistoryMutationResult setFavorite(qint64 id, bool favorite);
+    HistoryMutationResult setNote(qint64 id, const QString &note);
     HistoryMutationResult remove(qint64 id);
     HistoryMutationResult clear();
     HistoryMutationResult removeExpired(qint64 cutoffMsUtc);

@@ -39,6 +39,7 @@ struct HistoryEntry : NewHistoryEntry {
     qint64 id = 0;
     qint64 usageCount = 1;
     bool favorite = false;
+    QString note;
 };
 
 struct HistoryPage {
@@ -51,6 +52,7 @@ struct HistoryPreview : NewHistoryEntry {
     qint64 usageCount = 1;
     bool truncated = false;
     bool favorite = false;
+    QString note;
     QStringList sourcePaths;
     bool sourceMissing = false;
 };
@@ -86,6 +88,8 @@ public:
     RepositoryStatus get(qint64 id, HistoryEntry& entry);
     RepositoryStatus update(qint64 id, const NewHistoryEntry& entry);
     RepositoryStatus setFavorite(qint64 id, bool favorite);
+    RepositoryStatus setNote(qint64 id, const QString &note);
+    static constexpr int maxNoteLength() { return 2000; }
     HistoryPage page(qint64 offset, qint64 limit);
     HistoryPreviewPage previewPage(qint64 offset, qint64 limit,
                                    const QString &search = {}, const QString &kind = {},
