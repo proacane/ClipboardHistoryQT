@@ -7,6 +7,7 @@
 #endif
 
 #include <QGuiApplication>
+#include <QFont>
 #include <QClipboard>
 #include <QDebug>
 #include <QIcon>
@@ -54,6 +55,11 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
     QGuiApplication app(argc, argv);
+#ifdef Q_OS_WIN
+    QFont uiFont = app.font();
+    uiFont.setFamilies({QStringLiteral("Microsoft YaHei UI"), QStringLiteral("Segoe UI")});
+    app.setFont(uiFont);
+#endif
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app-icon.png")));
     QCoreApplication::setApplicationName(QStringLiteral("Clipboard History"));
     QCoreApplication::setOrganizationName(QStringLiteral("ClipboardHistory"));

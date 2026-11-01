@@ -1,0 +1,19 @@
+Clipboard History - Install / Upgrade
+
+For an existing installation, run this installer directly. You do not need to uninstall the old version first.
+
+Before upgrading, choose Exit from the application's tray menu. This lets pending history writes finish and releases the program files.
+
+The installer uses the previous installation directory and preserves:
+- data (history database, images, preferences and other user files)
+- ClipboardHistory.ini (including an external data-directory selection)
+- themes (imported custom themes)
+- custom-theme.json (the base custom palette)
+
+Program files and Qt runtime files are updated. Uninstalling also leaves the files above intact.
+
+If you previously used a portable copy instead of this installer, select that copy's existing writable folder when installing. An unregistered portable folder cannot be located automatically.
+
+升级：请直接运行新版安装包，无需先卸载旧版。开始前从托盘菜单选择“退出”，让待保存的记录写入完成。
+安装包会沿用旧安装目录，并保留历史、图片、偏好设置、外部数据目录指针和主题文件。
+若旧版为便携版，请在安装时选择原来的可写程序目录。
