@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import QtQuick.Shapes
 import QtCore
 import QtQuick.Dialogs
 import "ThemePalette.js" as ThemePalette
@@ -9,16 +10,17 @@ import "ThemePalette.js" as ThemePalette
 ApplicationWindow {
     id: window
 
-    width: 920
-    height: 680
+    width: 580
+    height: 660
     minimumWidth: resolutionLocked ? lockedWindowWidth : minimumWindowWidth
     maximumWidth: resolutionLocked ? lockedWindowWidth : maximumAllowedWindowWidth
     minimumHeight: resolutionLocked ? lockedWindowHeight : minimumWindowHeight
     maximumHeight: resolutionLocked ? lockedWindowHeight : maximumAllowedWindowHeight
     visible: !(Qt.platform.os === "windows" && Qt.application.arguments.indexOf("--startup") !== -1)
-    flags: Qt.Window | Qt.FramelessWindowHint
+    flags: Qt.Window | Qt.FramelessWindowHint | (window.alwaysOnTop ? Qt.WindowStaysOnTopHint : 0)
     title: "剪切板历史"
-    font.family: Qt.platform.os === "windows" ? "Microsoft YaHei UI" : Qt.application.font.family
+    font.family: "Microsoft YaHei UI"
+    font.pixelSize: 13
     color: page
     palette.window: window.page
     palette.windowText: window.textMain
@@ -28,17 +30,31 @@ ApplicationWindow {
     palette.button: window.tileSurface
     palette.buttonText: window.textMain
     palette.highlight: window.accent
-    palette.highlightedText: window.accentText
+    palette.highlightedText: window.onAccent
     palette.mid: window.line
     palette.placeholderText: window.textMuted
     onClosing: function(close) {
+        window.commitPendingDelete()
         if (Qt.platform.os === "windows") {
             close.accepted = false
             window.requestClose()
         }
     }
+    onActiveChanged: {
+        if (!active && window.autoHideOnBlur && !window.alwaysOnTop
+                && Qt.platform.os === "windows" && windowsPlatform.trayAvailable
+                && !window.settingsPageVisible
+                && !hotkeyErrorDialog.visible && !closeChoiceDialog.visible
+                && !importThemeNameDialog.visible && !entryContextMenu.visible && !noteEditorDialog.visible
+                && !(deleteDialogLoader.item && deleteDialogLoader.item.visible)
+                && !(clearDialogLoader.item && clearDialogLoader.item.visible)
+                && !(importDialogLoader.item && importDialogLoader.item.visible)) {
+            window.commitPendingDelete()
+            windowsPlatform.hideToTray()
+        }
+    }
 
-    property string themeMode: "浅色"
+    property string themeMode: "暗色"
     property var customThemePalette: ThemePalette.custom
     property string customThemeName: "自定义主题"
     property var importedThemes: []
@@ -66,12 +82,18 @@ ApplicationWindow {
     property var expandedEntryId: 0
     property string expandedEntryText: ""
     property bool expandedEntryLoadFailed: false
-    property int windowSizeWidth: 920
-    property int windowSizeHeight: 680
+    property int windowSizeWidth: 580
+    property int windowSizeHeight: 660
     property bool resolutionLocked: false
+    property bool alwaysOnTop: false
+    property bool autoHideOnBlur: false
+    property bool doubleClickToPaste: false
+    property bool suppressNextAutoPaste: false
+    property var pendingDeleteEntryId: 0
     property bool geometryReady: false
-    readonly property int minimumWindowWidth: 720
-    readonly property int minimumWindowHeight: 520
+    readonly property bool compactLayout: width < 540
+    readonly property int minimumWindowWidth: 440
+    readonly property int minimumWindowHeight: 460
     readonly property int maximumAllowedWindowWidth: Math.max(minimumWindowWidth,
         Math.min(3840, Screen.desktopAvailableWidth > 0 ? Screen.desktopAvailableWidth : 3840))
     readonly property int maximumAllowedWindowHeight: Math.max(minimumWindowHeight,
@@ -83,7 +105,99 @@ ApplicationWindow {
     onWidthChanged: if (geometryReady && !resolutionLocked) windowSizeSaveTimer.restart()
     onHeightChanged: if (geometryReady && !resolutionLocked) windowSizeSaveTimer.restart()
 
+    function showStatusMessage(message) {
+        window.historyMessage = message
+        if (message.length > 0)
+            statusMessageTimer.restart()
+        else
+            statusMessageTimer.stop()
+    }
+
+    function commitPendingDelete() {
+        pendingDeleteTimer.stop()
+        if (window.pendingDeleteEntryId > 0) {
+            const targetId = window.pendingDeleteEntryId
+            window.pendingDeleteEntryId = 0
+            historyModel.removeItemById(targetId)
+        }
+    }
+
+    function undoPendingDelete() {
+        pendingDeleteTimer.stop()
+        if (window.pendingDeleteEntryId > 0) {
+            window.pendingDeleteEntryId = 0
+            window.showStatusMessage("已撤销删除。")
+        }
+    }
+
+    function quickDelete(entryId, isFavorite) {
+        if (isFavorite) {
+            window.requestDelete(entryId)
+            return
+        }
+        window.commitPendingDelete()
+        if (window.expandedEntryId === entryId) {
+            window.expandedEntryId = 0
+            window.expandedEntryText = ""
+            window.expandedEntryLoadFailed = false
+        }
+        window.pendingDeleteEntryId = entryId
+        pendingDeleteTimer.restart()
+    }
+
+    function triggerCopyAt(index, copyOnly) {
+        if (index < 0 || index >= clipList.count)
+            return
+        clipList.currentIndex = index
+        window.suppressNextAutoPaste = !!copyOnly
+        historyModel.copyItem(index)
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;")
+                   .replace(/</g, "&lt;")
+                   .replace(/>/g, "&gt;")
+                   .replace(/"/g, "&quot;")
+                   .replace(/'/g, "&#39;")
+    }
+
+    function highlightedPreview(rawText, query) {
+        const trimmed = query ? query.trim() : ""
+        if (trimmed.length === 0)
+            return window.escapeHtml(rawText)
+        const lowerSource = rawText.toLowerCase()
+        const lowerQuery = trimmed.toLowerCase()
+        let result = ""
+        let pos = 0
+        let matchIndex = lowerSource.indexOf(lowerQuery, pos)
+        const bg = window.themeMode === "浅色" ? "#FEF08A" : window.accent
+        const fg = window.themeMode === "浅色" ? "#0F172A" : window.onAccent
+        while (matchIndex >= 0) {
+            if (matchIndex > pos)
+                result += window.escapeHtml(rawText.slice(pos, matchIndex))
+            result += "<span style=\"background-color:" + bg + ";color:" + fg + ";\">"
+                    + window.escapeHtml(rawText.slice(matchIndex, matchIndex + trimmed.length))
+                    + "</span>"
+            pos = matchIndex + trimmed.length
+            matchIndex = lowerSource.indexOf(lowerQuery, pos)
+        }
+        if (pos < rawText.length)
+            result += window.escapeHtml(rawText.slice(pos))
+        return result
+    }
+
+    function focusHistoryOnActivate() {
+        window.settingsPageVisible = false
+        clipList.currentIndex = 0
+        clipList.positionViewAtBeginning()
+        Qt.callLater(function() {
+            searchField.forceActiveFocus()
+            searchField.selectAll()
+        })
+    }
+
     function performClose(action) {
+        window.commitPendingDelete()
         window.saveWindowResolution()
         if (action === "tray" && windowsPlatform.trayAvailable)
             windowsPlatform.hideToTray()
@@ -92,6 +206,7 @@ ApplicationWindow {
     }
 
     function requestClose() {
+        window.commitPendingDelete()
         window.saveWindowResolution()
         if (Qt.platform.os !== "windows") {
             window.close()
@@ -129,26 +244,16 @@ ApplicationWindow {
     }
 
     function copySucceeded(message) {
-        let resultMessage = message
-        let warning = false
-        if (Qt.platform.os === "windows" && appearanceSettings.autoPasteIntoPreviousWindow
-                && !windowsPlatform.pasteToPreviousWindow()) {
-            resultMessage = "已复制到剪贴板，但未能自动粘贴。"
-            warning = true
-        }
-        window.historyMessage = resultMessage
-        window.showCopyNotification(resultMessage, warning)
-    }
-
-    function showCopyNotification(message, failed) {
-        if (!appearanceSettings.copyNotificationsEnabled) return
-        copyNotification.message = message
-        copyNotification.failed = failed
-        copyNotification.visible = true
-        copyNotificationTimer.restart()
+        const copyOnly = window.suppressNextAutoPaste
+        window.suppressNextAutoPaste = false
+        window.showStatusMessage(copyOnly ? "已仅复制到剪贴板。" : message)
+        if (!copyOnly && Qt.platform.os === "windows" && appearanceSettings.autoPasteIntoPreviousWindow
+                && !windowsPlatform.pasteToPreviousWindow())
+            window.showStatusMessage("已复制到剪贴板，但未能自动粘贴。")
     }
 
     function refreshFilteredHistory() {
+        window.commitPendingDelete()
         const kinds = { "文本": "text", "链接": "link", "文件": "path", "图片": "image", "收藏": "favorite" }
         clipList.currentIndex = 0
         historyModel.setFilter(searchField.text, kinds[selectedCategory] || "")
@@ -159,6 +264,90 @@ ApplicationWindow {
                 ? appPaths.pendingDataDirectory : appPaths.currentDataDirectory
         window.storageError = ""
         window.settingsPageVisible = true
+    }
+
+    function openClearDialog() {
+        clearDialogLoader.active = true
+        clearDialogLoader.item.open()
+    }
+
+    function openNoteEditor(entryId, currentNote) {
+        noteEditorDialog.entryId = entryId
+        noteEditorDialog.initialNote = currentNote || ""
+        noteEditorDialog.open()
+    }
+
+    function categoryIconName(category) {
+        const names = { "全部": "all", "文本": "text", "链接": "link", "文件": "file", "图片": "image", "收藏": "star" }
+        return names[category] || "text"
+    }
+
+    function kindIconName(kind) {
+        const names = { "文本": "text", "链接": "link", "文件": "file", "图片": "image" }
+        return names[kind] || "text"
+    }
+
+    function vectorIconPath(name) {
+        switch (name) {
+        case "all": return "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z"
+        case "text": return "M4 6h16 M4 12h16 M4 18h10"
+        case "link": return "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+        case "file": return "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6"
+        case "image": return "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8.5 8.5a1.5 1.5 0 1 0 0.01 0z M21 15l-5-5L5 21"
+        case "star": return "M12 2.5l2.9 5.88 6.5.94-4.7 4.58 1.11 6.47L12 17.3l-5.81 3.07 1.11-6.47-4.7-4.58 6.5-.94z"
+        case "search": return "M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M20 20l-4.35-4.35"
+        case "pause": return "M8 5v14 M16 5v14"
+        case "play": return "M7 5l12 7-12 7z"
+        case "pin": return "M12 17v5 M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1V4H8v2h1z"
+        case "history": return "M4 6h16 M4 12h16 M4 18h16"
+        case "settings": return "M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+        case "close": return "M6 6l12 12 M18 6L6 18"
+        case "copy": return "M9 9h11v11H9z M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
+        case "external": return "M14 4h6v6 M10 14L20 4 M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"
+        case "folder": return "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+        case "trash": return "M4 7h16 M10 11v6 M14 11v6 M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13 M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"
+        case "window": return "M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M3 9h18"
+        case "resize": return "M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7"
+        case "palette": return "M12 3a9 9 0 1 0 0 18h1.5a2.5 2.5 0 0 0 0-5H12a2 2 0 0 1 0-4h4a5 5 0 0 0 0-9z"
+        case "keyboard": return "M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M7 10h.01 M11 10h.01 M15 10h.01 M8 14h8"
+        case "clock": return "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 7v5l3 2"
+        case "layers": return "M12 3l9 4.5-9 4.5-9-4.5z M3 12l9 4.5 9-4.5 M3 16.5L12 21l9-4.5"
+        case "database": return "M12 3c4.97 0 9 1.34 9 3s-4.03 3-9 3-9-1.34-9-3 4.03-3 9-3z M3 6v12c0 1.66 4.03 3 9 3s9-1.34 9-3V6 M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"
+        case "note": return "M12 20h9 M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"
+        default: return "M4 6h16 M4 12h16 M4 18h10"
+        }
+    }
+
+    component VectorIcon: Item {
+        id: vecIcon
+        property string iconName: "text"
+        property real iconSize: 15
+        property color iconColor: window.textMuted
+        property bool filled: false
+        property real strokeWidth: 1.85
+        implicitWidth: iconSize
+        implicitHeight: iconSize
+        width: iconSize
+        height: iconSize
+
+        Shape {
+            width: 24
+            height: 24
+            transformOrigin: Item.TopLeft
+            scale: vecIcon.width / 24.0
+            preferredRendererType: Shape.CurveRenderer
+            layer.enabled: true
+            layer.smooth: true
+            layer.textureSize: Qt.size(48, 48)
+            ShapePath {
+                strokeColor: vecIcon.iconColor
+                strokeWidth: vecIcon.strokeWidth
+                fillColor: vecIcon.filled ? vecIcon.iconColor : "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+                PathSvg { path: window.vectorIconPath(vecIcon.iconName) }
+            }
+        }
     }
 
     function categorySymbol(category) {
@@ -399,13 +588,13 @@ ApplicationWindow {
             return window.customThemePalette
         }
         if (name === "浅色")
-            return { page: "#F5F7FB", surface: "#FFFFFF", sidebarSurface: "#F1F5F9", line: "#D7DEE8",
-                     textMain: "#263448", textMuted: "#5B6A7C", accent: "#315DE9", onAccent: "#FFFFFF", inputSurface: "#F5F7FB" }
+            return { page: "#F3F4F6", surface: "#FFFFFF", sidebarSurface: "#FAFAFB", line: "#E5E7EB",
+                     textMain: "#111827", textMuted: "#6B7280", accent: "#2563EB", onAccent: "#FFFFFF", inputSurface: "#FFFFFF" }
         if (name === "北极光")
-            return { page: "#2E3440", surface: "#434C5E", sidebarSurface: "#3B4252", line: "#4C566A",
-                     textMain: "#ECEFF4", textMuted: "#D8DEE9", accent: "#88C0D0", onAccent: "#14283C", inputSurface: "#2E3440" }
-        return { page: "#111B2B", surface: "#19263A", sidebarSurface: "#101626", line: "#30384A",
-                 textMain: "#F1F5F9", textMuted: "#B1BFD3", accent: "#90B4F7", onAccent: "#14283C", inputSurface: "#111B2B" }
+            return { page: "#262B35", surface: "#2F3643", sidebarSurface: "#2A303C", line: "#3D4657",
+                     textMain: "#ECEFF4", textMuted: "#AEB7C6", accent: "#88C0D0", onAccent: "#1E232B", inputSurface: "#232831" }
+        return { page: "#111315", surface: "#191C20", sidebarSurface: "#15171A", line: "#262A30",
+                 textMain: "#EDEDEF", textMuted: "#8A8F98", accent: "#4C8BF5", onAccent: "#FFFFFF", inputSurface: "#16181C" }
     }
 
     function kindAccent(kind) {
@@ -551,69 +740,11 @@ ApplicationWindow {
         return true
     }
 
-    readonly property var iconPaths: ({
-        history: "M5 3h14v18H5z M8 7h8 M8 11h8 M8 15h5",
-        all: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z",
-        text: "M5 5h14 M12 5v14 M8 19h8",
-        link: "M10 13a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-2 2 M14 11a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l2-2",
-        file: "M5 3h9l5 5v13H5z M14 3v6h5",
-        image: "M3 4h18v16H3z M3 16l5-5 4 4 3-3 6 6 M15 8h.01",
-        star: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z",
-        search: "m21 21-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
-        settings: "m9 3-.7 2.5-2.4 1-.1 2.6L3 11v2l2.8 1.9.1 2.6 2.4 1L9 21h6l.7-2.5 2.4-1 .1-2.6L21 13v-2l-2.8-1.9-.1-2.6-2.4-1L15 3z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
-        close: "m6 6 12 12 M18 6 6 18",
-        code: "m8 7-5 5 5 5 M16 7l5 5-5 5",
-        clock: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0 M12 7v5l3 2",
-        window: "M3 4h18v16H3z M3 9h18",
-        resize: "M4 9V4h5 M15 4h5v5 M20 15v5h-5 M9 20H4v-5",
-        theme: "M12 3a9 9 0 0 0 0 18V3z M12 3a9 9 0 0 1 0 18",
-        keyboard: "M2 6h20v13H2z M6 10h.01 M10 10h.01 M14 10h.01 M18 10h.01 M6 15h12",
-        stack: "m3 7 9-4 9 4-9 4z M3 12l9 4 9-4 M3 17l9 4 9-4",
-        database: "M3 6c0-4 18-4 18 0s-18 4-18 0v12c0 4 18 4 18 0V6 M3 12c0 4 18 4 18 0"
-    })
-    function categoryIcon(category) {
-        return iconPaths[({"全部":"all", "文本":"text", "链接":"link", "文件":"file", "图片":"image", "收藏":"star"})[category]] || iconPaths.text
-    }
-    component UiText: Text {
-        font.family: Qt.platform.os === "windows" ? "Microsoft YaHei UI" : Qt.application.font.family
-    }
-
-    component UiIcon: Image {
-        required property string pathData
-        property color ink: "#263448"
-        property bool filled: false
-        width: 18
-        height: 18
-        sourceSize.width: Math.max(1, width * Screen.devicePixelRatio)
-        sourceSize.height: Math.max(1, height * Screen.devicePixelRatio)
-        source: "data:image/svg+xml;utf8," + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="' + (filled ? ink : "none")
-            + '" stroke="' + ink + '" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="'
-            + pathData + '"/></svg>')
-    }
-    component FavoriteMark: Rectangle {
-        required property color ink
-        required property color tint
-        implicitWidth: favoriteContents.implicitWidth + 14
-        implicitHeight: 22
-        radius: 4
-        color: tint
-        Accessible.role: Accessible.StaticText
-        Accessible.name: "已收藏"
-        Row {
-            id: favoriteContents
-            anchors.centerIn: parent
-            spacing: 4
-            UiIcon { anchors.verticalCenter: parent.verticalCenter; width: 12; height: 12; pathData: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z"; ink: parent.parent.ink; filled: true }
-            UiText { anchors.verticalCenter: parent.verticalCenter; text: "已收藏"; color: parent.parent.ink; font.pixelSize: 11; font.weight: Font.DemiBold }
-        }
-    }
-
     component SettingsSection: Rectangle {
         id: settingsSection
         required property string heading
         required property string description
-        required property string iconPath
+        required property string iconText
         required property color iconColor
         required property color surfaceColor
         required property color borderColor
@@ -621,9 +752,9 @@ ApplicationWindow {
         required property color subtitleColor
         default property alias content: sectionBody.data
         implicitHeight: sectionLayout.implicitHeight
-        color: "transparent"
-        border.width: 0
-        radius: 0
+        color: surfaceColor
+        border.color: borderColor
+        radius: 14
 
         ColumnLayout {
             id: sectionLayout
@@ -638,21 +769,26 @@ ApplicationWindow {
                 Rectangle {
                     Layout.preferredWidth: 30
                     Layout.preferredHeight: 30
-                    radius: 9
+                    radius: 8
                     color: Qt.rgba(settingsSection.iconColor.r, settingsSection.iconColor.g,
-                                   settingsSection.iconColor.b, 0.14)
-                    UiIcon { anchors.centerIn: parent; pathData: settingsSection.iconPath; ink: settingsSection.iconColor }
+                                   settingsSection.iconColor.b, 0.13)
+                    VectorIcon {
+                        anchors.centerIn: parent
+                        iconName: settingsSection.iconText
+                        iconSize: 15
+                        iconColor: settingsSection.iconColor
+                    }
                 }
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    UiText {
+                    Text {
                         text: settingsSection.heading
                         color: settingsSection.titleColor
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                     }
-                    UiText {
+                    Text {
                         Layout.fillWidth: true
                         text: settingsSection.description
                         color: settingsSection.subtitleColor
@@ -693,85 +829,22 @@ ApplicationWindow {
             border.color: themedCheckBox.activeFocus || themedCheckBox.checked
                           ? themedCheckBox.themeTokens.accent : themedCheckBox.themeTokens.line
             border.width: themedCheckBox.activeFocus ? 2 : 1
-            UiText {
+            Text {
                 anchors.centerIn: parent
                 visible: themedCheckBox.checked
                 text: "✓"
-                color: themedCheckBox.themeTokens.accentText
+                color: themedCheckBox.themeTokens.onAccent
                 font.pixelSize: 12
                 font.bold: true
             }
         }
-        contentItem: UiText {
+        contentItem: Text {
             leftPadding: themedCheckBox.indicator.width + themedCheckBox.spacing
             text: themedCheckBox.text
             color: themedCheckBox.enabled ? themedCheckBox.themeTokens.textMain : themedCheckBox.themeTokens.textMuted
             font.pixelSize: 11
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.NoWrap
-        }
-    }
-
-    function editNote(entryId, text) {
-        noteDialogLoader.active = true
-        noteDialogLoader.item.edit(entryId, text)
-    }
-
-    component SettingsNumberInput: SpinBox {
-        id: numberInput
-        required property var themeTokens
-        implicitHeight: 36
-        leftPadding: 36
-        rightPadding: 36
-        editable: true
-        opacity: enabled ? 1 : 0.55
-        contentItem: TextInput {
-            text: numberInput.displayText
-            font.pixelSize: 12
-            color: numberInput.themeTokens.textMain
-            selectionColor: numberInput.themeTokens.accent
-            selectedTextColor: numberInput.themeTokens.accentText
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            readOnly: !numberInput.editable
-            validator: numberInput.validator
-            inputMethodHints: Qt.ImhDigitsOnly
-            clip: true
-        }
-        down.indicator: Rectangle {
-            x: 4
-            y: (numberInput.height - height) / 2
-            implicitWidth: 28
-            implicitHeight: 28
-            radius: 5
-            color: numberInput.down.pressed ? numberInput.themeTokens.selectedRow
-                 : numberInput.down.hovered ? numberInput.themeTokens.tileSurface : "transparent"
-            UiText {
-                anchors.centerIn: parent
-                text: "−"
-                font.pixelSize: 18
-                color: numberInput.down.enabled ? numberInput.themeTokens.textMain : numberInput.themeTokens.textMuted
-            }
-        }
-        up.indicator: Rectangle {
-            x: numberInput.width - width - 4
-            y: (numberInput.height - height) / 2
-            implicitWidth: 28
-            implicitHeight: 28
-            radius: 5
-            color: numberInput.up.pressed ? numberInput.themeTokens.selectedRow
-                 : numberInput.up.hovered ? numberInput.themeTokens.tileSurface : "transparent"
-            UiText {
-                anchors.centerIn: parent
-                text: "+"
-                font.pixelSize: 18
-                color: numberInput.up.enabled ? numberInput.themeTokens.textMain : numberInput.themeTokens.textMuted
-            }
-        }
-        background: Rectangle {
-            radius: 7
-            color: numberInput.themeTokens.inputSurface
-            border.color: numberInput.activeFocus ? numberInput.themeTokens.accent : numberInput.themeTokens.line
         }
     }
 
@@ -787,10 +860,10 @@ ApplicationWindow {
                    : actionButton.hovered ? actionButton.themeTokens.selectedRow : actionButton.themeTokens.tileSurface
             border.color: actionButton.primaryAction ? actionButton.themeTokens.accent : actionButton.themeTokens.line
         }
-        contentItem: UiText {
+        contentItem: Text {
             text: actionButton.text
             color: actionButton.primaryAction && actionButton.enabled
-                   ? actionButton.themeTokens.accentText : actionButton.themeTokens.textMain
+                   ? actionButton.themeTokens.onAccent : actionButton.themeTokens.textMain
             font.pixelSize: 11
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -801,33 +874,23 @@ ApplicationWindow {
     readonly property bool nordMode: themeMode === "北极光" || themeMode === "蓝色"
     readonly property bool customMode: themeMode === "自定义"
     readonly property var activeThemePalette: window.currentCustomThemePalette()
-    readonly property color page: customMode ? activeThemePalette.page : themeMode === "浅色" ? "#F5F7FB" : nordMode ? "#2E3440" : "#111B2B"
-    readonly property color surface: customMode ? activeThemePalette.surface : themeMode === "浅色" ? "#FFFFFF" : nordMode ? "#434C5E" : "#19263A"
-    readonly property color sidebarSurface: customMode ? activeThemePalette.sidebarSurface : themeMode === "浅色" ? "#F1F5F9" : nordMode ? "#3B4252" : "#101626"
-    readonly property color rowSurface: customMode ? activeThemePalette.rowSurface : themeMode === "浅色" ? "#FFFFFF" : nordMode ? "#3B4252" : "#19263A"
-    readonly property color line: customMode ? activeThemePalette.line : themeMode === "浅色" ? "#D7DEE8" : nordMode ? "#4C566A" : "#30384A"
-    readonly property color textMain: customMode ? activeThemePalette.textMain : themeMode === "浅色" ? "#263448" : nordMode ? "#ECEFF4" : "#F1F5F9"
-    readonly property color textMuted: customMode ? activeThemePalette.textMuted : themeMode === "浅色" ? "#5B6A7C" : nordMode ? "#D8DEE9" : "#B1BFD3"
-    readonly property color accent: customMode ? activeThemePalette.accent : themeMode === "浅色" ? "#315DE9" : nordMode ? "#88C0D0" : "#90B4F7"
-    readonly property color selectedRow: customMode ? activeThemePalette.selectedRow : themeMode === "浅色" ? "#EDF2FF" : nordMode ? "#4C566A" : "#263B59"
+    readonly property color page: customMode ? activeThemePalette.page : themeMode === "浅色" ? "#F3F4F6" : nordMode ? "#262B35" : "#111315"
+    readonly property color surface: customMode ? activeThemePalette.surface : themeMode === "浅色" ? "#FFFFFF" : nordMode ? "#2F3643" : "#191C20"
+    readonly property color sidebarSurface: customMode ? activeThemePalette.sidebarSurface : themeMode === "浅色" ? "#FAFAFB" : nordMode ? "#2A303C" : "#15171A"
+    readonly property color rowSurface: customMode ? activeThemePalette.rowSurface : themeMode === "浅色" ? "#FFFFFF" : nordMode ? "#2F3643" : "#181B1F"
+    readonly property color line: customMode ? activeThemePalette.line : themeMode === "浅色" ? "#E5E7EB" : nordMode ? "#3D4657" : "#262A30"
+    readonly property color textMain: customMode ? activeThemePalette.textMain : themeMode === "浅色" ? "#111827" : nordMode ? "#ECEFF4" : "#EDEDEF"
+    readonly property color textMuted: customMode ? activeThemePalette.textMuted : themeMode === "浅色" ? "#6B7280" : nordMode ? "#AEB7C6" : "#8A8F98"
+    readonly property color accent: customMode ? activeThemePalette.accent : themeMode === "浅色" ? "#2563EB" : nordMode ? "#88C0D0" : "#4C8BF5"
+    readonly property color selectedRow: customMode ? activeThemePalette.selectedRow : themeMode === "浅色" ? "#EFF6FF" : nordMode ? "#394252" : "#1E2530"
     readonly property color selectedText: customMode ? activeThemePalette.selectedText : textMain
-    readonly property color inputSurface: customMode ? activeThemePalette.inputSurface : themeMode === "浅色" ? "#F5F7FB" : nordMode ? "#2E3440" : "#111B2B"
-    readonly property color tileSurface: customMode ? activeThemePalette.tileSurface : themeMode === "浅色" ? "#EEF2F7" : nordMode ? "#4C566A" : "#263B59"
-    readonly property color tagSurface: customMode ? activeThemePalette.tagSurface : themeMode === "浅色" ? "#EEF2F7" : nordMode ? "#4C566A" : "#263B59"
-    readonly property color dangerColor: customMode ? activeThemePalette.danger : themeMode === "浅色" ? "#A94732" : "#F0A18D"
-    readonly property color dangerSurface: customMode ? activeThemePalette.dangerSurface : themeMode === "浅色" ? "#FEE2E2" : "#3A222A"
-    readonly property color favoriteColor: customMode ? activeThemePalette.favorite : "#EAB308"
-    readonly property color accentText: customMode ? activeThemePalette.onAccent : themeMode === "浅色" ? "#FFFFFF" : "#14283C"
-    readonly property bool lightSurface: rowSurface.r * 0.2126 + rowSurface.g * 0.7152 + rowSurface.b * 0.0722 > 0.55
-    readonly property color favoriteInk: customMode ? favoriteColor : lightSurface ? "#805300" : "#F2CB7D"
-    readonly property color favoriteTint: customMode
-        ? Qt.tint(rowSurface, Qt.rgba(favoriteColor.r, favoriteColor.g, favoriteColor.b, 0.17))
-        : lightSurface ? "#FFF0CD" : "#413621"
-    readonly property color headerSurface: customMode ? sidebarSurface : themeMode === "浅色" ? "#14283C" : sidebarSurface
-    readonly property bool lightHeader: headerSurface.r * 0.2126 + headerSurface.g * 0.7152 + headerSurface.b * 0.0722 > 0.55
-    readonly property color headerInk: lightHeader ? "#263448" : "#F1F5F9"
-    readonly property color headerMuted: lightHeader ? "#53657B" : "#C3D0E2"
-
+    readonly property color inputSurface: customMode ? activeThemePalette.inputSurface : themeMode === "浅色" ? "#FFFFFF" : nordMode ? "#232831" : "#16181C"
+    readonly property color tileSurface: customMode ? activeThemePalette.tileSurface : themeMode === "浅色" ? "#EEF0F3" : nordMode ? "#3A4252" : "#22262C"
+    readonly property color tagSurface: customMode ? activeThemePalette.tagSurface : themeMode === "浅色" ? "#ECEEF2" : nordMode ? "#353D4C" : "#1D2026"
+    readonly property color dangerColor: customMode ? activeThemePalette.danger : themeMode === "浅色" ? "#DC2626" : "#F87171"
+    readonly property color dangerSurface: customMode ? activeThemePalette.dangerSurface : themeMode === "浅色" ? "#FEE2E2" : "#2D1B1E"
+    readonly property color favoriteColor: customMode ? activeThemePalette.favorite : themeMode === "浅色" ? "#D97706" : "#F5B942"
+    readonly property color onAccent: customMode ? activeThemePalette.onAccent : (nordMode ? "#1E232B" : "#FFFFFF")
 
     Settings {
         id: appearanceSettings
@@ -840,17 +903,13 @@ ApplicationWindow {
         property alias windowSizeWidth: window.windowSizeWidth
         property alias windowSizeHeight: window.windowSizeHeight
         property alias resolutionLocked: window.resolutionLocked
+        property alias alwaysOnTop: window.alwaysOnTop
+        property alias autoHideOnBlur: window.autoHideOnBlur
+        property alias doubleClickToPaste: window.doubleClickToPaste
         // Read once to migrate custom themes saved by earlier versions into the sidecar JSON file.
         property string customThemeJson: ""
         property string globalHotkey: "Ctrl+Shift+V"
         property bool autoPasteIntoPreviousWindow: true
-        property bool copyNotificationsEnabled: true
-        onCopyNotificationsEnabledChanged: {
-            if (!copyNotificationsEnabled && copyNotification && copyNotificationTimer) {
-                copyNotificationTimer.stop()
-                copyNotification.hide()
-            }
-        }
         property bool startWithWindows: false
         property string closeAction: "ask"
         property int maximumEntries: 0
@@ -904,9 +963,15 @@ ApplicationWindow {
 
     Connections {
         target: Qt.platform.os === "windows" ? windowsPlatform : null
+        function onActivationRequested() {
+            window.focusHistoryOnActivate()
+        }
+        function onSettingsRequested() {
+            window.openSettings()
+        }
         function onLastErrorChanged() {
             if (windowsPlatform.lastError.length > 0)
-                window.historyMessage = windowsPlatform.lastError
+                window.showStatusMessage(windowsPlatform.lastError)
         }
         function onGlobalHotkeyChanged() {
             if (!window.hotkeyCaptureActive) {
@@ -927,12 +992,12 @@ ApplicationWindow {
     Connections {
         target: historyModel
         function onCopyFailed() {
-            window.historyMessage = "复制失败，请重试。"
-            window.showCopyNotification(window.historyMessage, true)
+            window.suppressNextAutoPaste = false
+            window.showStatusMessage("复制失败，请重试。")
         }
         function onCopySourceMissing() {
-            window.historyMessage = "源文件已不存在，无法复制到剪贴板。"
-            window.showCopyNotification(window.historyMessage, true)
+            window.suppressNextAutoPaste = false
+            window.showStatusMessage("源文件已不存在，无法复制到剪贴板。")
         }
         function onCopyContentReady(kind, content) { window.copySucceeded("已复制到剪贴板。") }
         function onCopyImageReady(image) { window.copySucceeded("已复制图片到剪贴板。") }
@@ -944,86 +1009,30 @@ ApplicationWindow {
             if (window.expandedEntryId === entryId)
                 window.expandedEntryLoadFailed = true
         }
-        function onRetentionFailed() { window.historyMessage = "自动清理失败，将在下一次检查时重试。" }
+        function onRetentionFailed() { window.showStatusMessage("自动清理失败，将在下一次检查时重试。") }
         function onRetentionCompleted(removedCount, cleanupPending) {
-            window.historyMessage = "已自动清理 " + removedCount + " 条非收藏记录。"
-                    + (cleanupPending ? "部分图片文件未能清理。" : "")
+            window.showStatusMessage("已自动清理 " + removedCount + " 条非收藏记录。"
+                    + (cleanupPending ? "部分图片文件未能清理。" : ""))
         }
-        function onMutationFailed() { window.historyMessage = "操作失败，请重试。" }
+        function onMutationFailed() { window.showStatusMessage("操作失败，请重试。") }
         function onMutationCompleted(cleanupPending) {
-            window.historyMessage = cleanupPending ? "记录已更新，但有图片文件未能清理。" : "历史记录已更新。"
+            window.showStatusMessage(cleanupPending ? "记录已更新，但有图片文件未能清理。" : "历史记录已更新。")
         }
-        function onLegacyImportFailed() { window.historyMessage = "旧历史导入失败，请检查数据库和 images 文件夹。" }
+        function onNoteSaveFinished(id, success) {
+            window.showStatusMessage(success ? "备注已保存。" : "备注保存失败，请重试。")
+        }
+        function onLegacyImportFailed() { window.showStatusMessage("旧历史导入失败，请检查数据库和 images 文件夹。") }
         function onLegacyImportCompleted(importedRows, alreadyImportedRows, skippedRows, cleanupPending) {
-            window.historyMessage = "导入完成：新增 " + importedRows + " 条，已存在 "
+            window.showStatusMessage("导入完成：新增 " + importedRows + " 条，已存在 "
                     + alreadyImportedRows + " 条，跳过 " + skippedRows + " 条"
-                    + (cleanupPending ? "；有图片文件未能清理。" : "。")
+                    + (cleanupPending ? "；有图片文件未能清理。" : "。"))
         }
     }
 
     Connections {
         target: clipboardCapture
-        function onRecordFailed(result) { window.historyMessage = "保存剪贴板内容失败。" }
-        function onInitializationFailed(status) { window.historyMessage = "历史数据库初始化失败。" }
-    }
-
-    Window {
-        id: copyNotification
-        transientParent: null
-        flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
-               | Qt.WindowDoesNotAcceptFocus | Qt.WindowTransparentForInput
-        visible: false
-        color: "transparent"
-        title: "复制结果提示"
-        property string message: ""
-        property bool failed: false
-        width: Math.min(420, window.width - 40)
-        height: copyNotificationContent.implicitHeight + 32
-        x: window.x + (window.width - width) / 2
-        y: window.y + window.height - height - 48
-        Rectangle {
-            anchors.fill: parent
-            radius: 12
-            color: window.surface
-            border.width: 2
-            border.color: copyNotification.failed ? window.dangerColor : window.accent
-            RowLayout {
-                id: copyNotificationContent
-                anchors.fill: parent
-                anchors.margins: 16
-                spacing: 12
-                Rectangle {
-                    Layout.preferredWidth: 32
-                    Layout.preferredHeight: 32
-                    radius: 8
-                    color: copyNotification.failed ? window.dangerSurface : window.tagSurface
-                    UiText {
-                        anchors.centerIn: parent
-                        text: copyNotification.failed ? "!" : "✓"
-                        color: copyNotification.failed ? window.dangerColor : window.accent
-                        font.pixelSize: 20
-                        font.bold: true
-                    }
-                }
-                UiText {
-                    Layout.fillWidth: true
-                    text: copyNotification.message
-                    textFormat: Text.PlainText
-                    color: window.textMain
-                    font.pixelSize: 13
-                    font.weight: Font.DemiBold
-                    wrapMode: Text.Wrap
-                    Accessible.role: Accessible.AlertMessage
-                    Accessible.name: text
-                }
-            }
-        }
-    }
-
-    Timer {
-        id: copyNotificationTimer
-        interval: copyNotification.failed ? 3500 : 2000
-        onTriggered: copyNotification.hide()
+        function onRecordFailed(result) { window.showStatusMessage("保存剪贴板内容失败。") }
+        function onInitializationFailed(status) { window.showStatusMessage("历史数据库初始化失败。") }
     }
 
     Timer {
@@ -1033,35 +1042,208 @@ ApplicationWindow {
         onTriggered: window.saveWindowResolution()
     }
 
+    Timer {
+        id: statusMessageTimer
+        interval: 3500
+        repeat: false
+        onTriggered: window.historyMessage = ""
+    }
+
+    Timer {
+        id: pendingDeleteTimer
+        interval: 4500
+        repeat: false
+        onTriggered: window.commitPendingDelete()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+F"
+        enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive
+        onActivated: {
+            searchField.forceActiveFocus()
+            searchField.selectAll()
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+,"
+        enabled: !window.hotkeyCaptureActive
+        onActivated: window.settingsPageVisible ? (window.settingsPageVisible = false) : window.openSettings()
+    }
+
+    Shortcut {
+        sequence: "Escape"
+        enabled: !window.hotkeyCaptureActive
+                 && !hotkeyErrorDialog.visible && !closeChoiceDialog.visible
+                 && !importThemeNameDialog.visible && !entryContextMenu.visible && !noteEditorDialog.visible
+                 && !(deleteDialogLoader.item && deleteDialogLoader.item.visible)
+                 && !(clearDialogLoader.item && clearDialogLoader.item.visible)
+                 && !(importDialogLoader.item && importDialogLoader.item.visible)
+        onActivated: {
+            if (window.settingsPageVisible) {
+                window.settingsPageVisible = false
+                return
+            }
+            if (searchField.text.length > 0) {
+                searchField.text = ""
+                window.refreshFilteredHistory()
+                return
+            }
+            if (window.expandedEntryId !== 0) {
+                window.expandedEntryId = 0
+                window.expandedEntryText = ""
+                window.expandedEntryLoadFailed = false
+                return
+            }
+            if (Qt.platform.os === "windows" && windowsPlatform.trayAvailable) {
+                window.commitPendingDelete()
+                windowsPlatform.hideToTray()
+            }
+        }
+    }
+
+    Shortcut { sequence: "Alt+1"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(0, false) }
+    Shortcut { sequence: "Alt+2"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(1, false) }
+    Shortcut { sequence: "Alt+3"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(2, false) }
+    Shortcut { sequence: "Alt+4"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(3, false) }
+    Shortcut { sequence: "Alt+5"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(4, false) }
+    Shortcut { sequence: "Alt+6"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(5, false) }
+    Shortcut { sequence: "Alt+7"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(6, false) }
+    Shortcut { sequence: "Alt+8"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(7, false) }
+    Shortcut { sequence: "Alt+9"; enabled: !window.settingsPageVisible && !window.hotkeyCaptureActive; onActivated: window.triggerCopyAt(8, false) }
+
+    Menu {
+        id: entryContextMenu
+        property int targetIndex: -1
+        property var targetEntryId: 0
+        property string targetKind: ""
+        property string targetText: ""
+        property string targetNote: ""
+        property bool targetFavorite: false
+        property bool targetCanExpand: false
+        property bool targetExpanded: false
+        property bool targetSourceMissing: false
+
+        background: Rectangle {
+            implicitWidth: 196
+            radius: 10
+            color: window.surface
+            border.color: window.line
+        }
+
+        component ContextMenuItem: MenuItem {
+            id: ctxItem
+            implicitHeight: 34
+            contentItem: Text {
+                text: ctxItem.text
+                color: ctxItem.enabled ? (ctxItem.highlighted ? window.accent : window.textMain) : window.textMuted
+                font.pixelSize: 12
+                verticalAlignment: Text.AlignVCenter
+                leftPadding: 10
+                rightPadding: 10
+            }
+            background: Rectangle {
+                radius: 6
+                color: ctxItem.highlighted ? window.selectedRow : "transparent"
+            }
+        }
+
+        ContextMenuItem {
+            text: appearanceSettings.autoPasteIntoPreviousWindow ? "复制并粘贴　(Enter)" : "复制到剪贴板　(Enter)"
+            enabled: !entryContextMenu.targetSourceMissing
+            onTriggered: window.triggerCopyAt(entryContextMenu.targetIndex, false)
+        }
+        ContextMenuItem {
+            text: "仅复制到剪贴板　(Shift+Enter)"
+            visible: appearanceSettings.autoPasteIntoPreviousWindow
+            height: visible ? implicitHeight : 0
+            enabled: !entryContextMenu.targetSourceMissing
+            onTriggered: window.triggerCopyAt(entryContextMenu.targetIndex, true)
+        }
+        ContextMenuItem {
+            text: entryContextMenu.targetExpanded ? "收起完整内容　(Space)" : "展开完整内容　(Space)"
+            visible: entryContextMenu.targetCanExpand || entryContextMenu.targetExpanded
+            height: visible ? implicitHeight : 0
+            onTriggered: window.toggleEntry(entryContextMenu.targetEntryId, entryContextMenu.targetKind)
+        }
+        ContextMenuItem {
+            text: "在浏览器中打开"
+            visible: entryContextMenu.targetKind === "链接" && Qt.platform.os === "windows"
+            height: visible ? implicitHeight : 0
+            onTriggered: {
+                if (!windowsPlatform.openExternalLink(entryContextMenu.targetText))
+                    window.showStatusMessage("无法打开该链接。")
+            }
+        }
+        ContextMenuItem {
+            text: "在资源管理器中显示"
+            visible: entryContextMenu.targetKind === "文件" && !entryContextMenu.targetSourceMissing && Qt.platform.os === "windows"
+            height: visible ? implicitHeight : 0
+            onTriggered: {
+                if (!windowsPlatform.revealFileInExplorer(entryContextMenu.targetText))
+                    window.showStatusMessage("无法在资源管理器中定位该文件。")
+            }
+        }
+        ContextMenuItem {
+            text: "仅复制路径文本"
+            visible: entryContextMenu.targetKind === "文件" && Qt.platform.os === "windows"
+            height: visible ? implicitHeight : 0
+            onTriggered: {
+                if (windowsPlatform.copyPlainText(entryContextMenu.targetText))
+                    window.showStatusMessage("已复制文件路径文本。")
+            }
+        }
+        ContextMenuItem {
+            text: entryContextMenu.targetNote.length > 0 ? "编辑备注　(F2)" : "添加备注　(F2)"
+            onTriggered: window.openNoteEditor(entryContextMenu.targetEntryId, entryContextMenu.targetNote)
+        }
+        ContextMenuItem {
+            text: entryContextMenu.targetFavorite ? "取消收藏" : "加入收藏"
+            onTriggered: historyModel.setFavorite(entryContextMenu.targetIndex, !entryContextMenu.targetFavorite)
+        }
+        ContextMenuItem {
+            text: "删除此记录　(Del)"
+            onTriggered: window.quickDelete(entryContextMenu.targetEntryId, entryContextMenu.targetFavorite)
+        }
+    }
+
     Item {
         id: contentArea
         anchors.fill: parent
     }
 
     Rectangle {
+        z: 10
+        anchors.fill: parent
+        color: "transparent"
+        border.color: window.line
+        border.width: 1
+    }
+
+    Rectangle {
         id: headerBar
+        z: 2
         x: contentArea.x
         y: contentArea.y
         width: contentArea.width
-        height: 56
-        color: window.headerSurface
+        height: 46
+        color: window.sidebarSurface
         Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 1; color: window.line }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 16
-            anchors.rightMargin: 16
-            spacing: 8
+            anchors.leftMargin: 14
+            anchors.rightMargin: 10
+            spacing: 4
 
             Rectangle {
-                Layout.preferredWidth: 34
-                Layout.preferredHeight: 34
-                radius: 9
-                color: window.tileSurface
+                Layout.preferredWidth: 26
+                Layout.preferredHeight: 26
+                radius: 7
+                color: "transparent"
                 clip: true
                 Image {
                     anchors.fill: parent
-                    anchors.margins: 3
                     source: "qrc:/icons/app-icon.png"
                     fillMode: Image.PreserveAspectFit
                     smooth: true
@@ -1070,37 +1252,119 @@ ApplicationWindow {
                 Accessible.name: "剪贴板历史应用图标"
             }
 
-            ColumnLayout {
-                spacing: 1
-                UiText {
-                    text: "剪贴板历史"
-                    color: window.headerInk
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    Accessible.role: Accessible.Heading
-                }
-                UiText {
-                    text: "本地记录 · 快速回用"
-                    color: window.headerMuted
+            Text {
+                Layout.leftMargin: 4
+                text: window.settingsPageVisible ? "偏好设置" : "剪贴板历史"
+                color: window.textMain
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+                Accessible.role: Accessible.Heading
+            }
+
+            Rectangle {
+                visible: clipboardCapture.paused
+                Layout.leftMargin: 4
+                implicitWidth: pausedChipText.implicitWidth + 12
+                implicitHeight: 20
+                radius: 10
+                color: Qt.rgba(window.favoriteColor.r, window.favoriteColor.g, window.favoriteColor.b, 0.16)
+                Text {
+                    id: pausedChipText
+                    anchors.centerIn: parent
+                    text: "已暂停"
+                    color: window.favoriteColor
                     font.pixelSize: 10
+                    font.weight: Font.Medium
                 }
             }
 
             Item { Layout.fillWidth: true }
 
             ToolButton {
-                id: historyNavButton
-                implicitWidth: 32
-                implicitHeight: 32
+                id: pauseCaptureButton
+                implicitWidth: 30
+                implicitHeight: 30
                 checkable: true
-                checked: !window.settingsPageVisible
-                Accessible.name: "历史列表"
+                checked: clipboardCapture.paused
+                ToolTip.visible: hovered
+                ToolTip.delay: 400
+                ToolTip.text: clipboardCapture.paused ? "恢复剪贴板监听" : "暂停剪贴板监听"
+                Accessible.name: clipboardCapture.paused ? "恢复剪贴板监听" : "暂停剪贴板监听"
                 contentItem: Item {
-                    UiIcon { anchors.centerIn: parent; pathData: window.iconPaths.history; ink: window.headerInk }
+                    VectorIcon {
+                        anchors.centerIn: parent
+                        iconName: clipboardCapture.paused ? "play" : "pause"
+                        iconSize: 14
+                        iconColor: clipboardCapture.paused ? window.favoriteColor
+                                   : (pauseCaptureButton.hovered ? window.textMain : window.textMuted)
+                        filled: clipboardCapture.paused
+                    }
                 }
                 background: Rectangle {
-                    radius: 8
-                    color: historyNavButton.checked ? Qt.rgba(window.headerInk.r, window.headerInk.g, window.headerInk.b, 0.14) :
+                    radius: 7
+                    color: clipboardCapture.paused
+                           ? Qt.rgba(window.favoriteColor.r, window.favoriteColor.g, window.favoriteColor.b, 0.14)
+                           : (pauseCaptureButton.hovered ? window.tileSurface : "transparent")
+                }
+                onClicked: {
+                    clipboardCapture.togglePaused()
+                    window.showStatusMessage(clipboardCapture.paused ? "已暂停剪贴板监听。" : "已恢复剪贴板监听。")
+                }
+            }
+
+            ToolButton {
+                id: pinWindowButton
+                implicitWidth: 30
+                implicitHeight: 30
+                checkable: true
+                checked: window.alwaysOnTop
+                ToolTip.visible: hovered
+                ToolTip.delay: 400
+                ToolTip.text: window.alwaysOnTop ? "取消窗口置顶" : "窗口置顶"
+                Accessible.name: window.alwaysOnTop ? "取消窗口置顶" : "窗口置顶"
+                contentItem: Item {
+                    VectorIcon {
+                        anchors.centerIn: parent
+                        iconName: "pin"
+                        iconSize: 14
+                        iconColor: window.alwaysOnTop ? window.accent
+                                   : (pinWindowButton.hovered ? window.textMain : window.textMuted)
+                    }
+                }
+                background: Rectangle {
+                    radius: 7
+                    color: window.alwaysOnTop ? window.selectedRow :
+                           pinWindowButton.hovered ? window.tileSurface : "transparent"
+                }
+                onClicked: {
+                    window.alwaysOnTop = !window.alwaysOnTop
+                    appearanceSettings.sync()
+                    window.showStatusMessage(window.alwaysOnTop ? "窗口已置顶。" : "已取消窗口置顶。")
+                }
+            }
+
+            ToolButton {
+                id: historyNavButton
+                implicitWidth: 30
+                implicitHeight: 30
+                checkable: true
+                checked: !window.settingsPageVisible
+                ToolTip.visible: hovered
+                ToolTip.delay: 400
+                ToolTip.text: "历史列表"
+                Accessible.name: "历史列表"
+                contentItem: Item {
+                    VectorIcon {
+                        anchors.centerIn: parent
+                        iconName: "history"
+                        iconSize: 15
+                        iconColor: historyNavButton.checked ? window.accent
+                                   : (historyNavButton.hovered ? window.textMain : window.textMuted)
+                    }
+                }
+                background: Rectangle {
+                    radius: 7
+                    color: historyNavButton.checked ? window.selectedRow :
                            historyNavButton.hovered ? window.tileSurface : "transparent"
                 }
                 onClicked: window.settingsPageVisible = false
@@ -1109,53 +1373,78 @@ ApplicationWindow {
             ToolButton {
                 id: settingsButton
                 objectName: "settingsButton"
-                implicitWidth: 32
-                implicitHeight: 32
+                implicitWidth: 30
+                implicitHeight: 30
                 checkable: true
                 checked: window.settingsPageVisible
+                ToolTip.visible: hovered
+                ToolTip.delay: 400
+                ToolTip.text: "偏好设置 (Ctrl+,)"
                 Accessible.name: "偏好设置"
                 contentItem: Item {
-                    UiIcon { anchors.centerIn: parent; pathData: window.iconPaths.settings; ink: window.headerInk }
+                    VectorIcon {
+                        anchors.centerIn: parent
+                        iconName: "settings"
+                        iconSize: 15
+                        iconColor: settingsButton.checked ? window.accent
+                                   : (settingsButton.hovered ? window.textMain : window.textMuted)
+                    }
                 }
                 background: Rectangle {
-                    radius: 8
-                    color: settingsButton.checked ? Qt.rgba(window.headerInk.r, window.headerInk.g, window.headerInk.b, 0.14) :
+                    radius: 7
+                    color: settingsButton.checked ? window.selectedRow :
                            settingsButton.hovered ? window.tileSurface : "transparent"
                 }
                 onClicked: window.openSettings()
             }
 
-            Rectangle {
-                visible: Qt.platform.os === "windows"
-                implicitWidth: headerHotkeyText.implicitWidth + 16
+            ToolButton {
+                id: headerHotkeyBadge
+                visible: Qt.platform.os === "windows" && !window.compactLayout
+                Layout.leftMargin: 4
+                implicitWidth: headerHotkeyText.implicitWidth + 14
                 implicitHeight: 24
-                radius: 5
-                color: "transparent"
-                border.color: window.line
-                UiText {
+                padding: 0
+                ToolTip.visible: hovered
+                ToolTip.delay: 400
+                ToolTip.text: "点击修改全局快捷键"
+                Accessible.name: "全局快捷键 " + headerHotkeyText.text + "，点击修改"
+                contentItem: Text {
                     id: headerHotkeyText
-                    anchors.centerIn: parent
                     text: windowsPlatform.globalHotkey.length > 0 ? windowsPlatform.globalHotkey : "未设置快捷键"
-                    color: window.headerMuted
+                    color: headerHotkeyBadge.hovered ? window.accent : window.textMuted
                     font.family: "Consolas"
                     font.pixelSize: 11
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
-                Accessible.name: "全局快捷键 " + headerHotkeyText.text
+                background: Rectangle {
+                    radius: 6
+                    color: headerHotkeyBadge.hovered ? window.selectedRow : window.tagSurface
+                }
+                onClicked: window.openHotkeySettings()
             }
 
             ToolButton {
                 id: topCloseButton
-                implicitWidth: 32
-                implicitHeight: 32
+                Layout.leftMargin: 2
+                implicitWidth: 30
+                implicitHeight: 30
+                ToolTip.visible: hovered
+                ToolTip.delay: 400
+                ToolTip.text: "关闭窗口"
                 Accessible.name: "关闭剪贴板历史"
-                contentItem: Item { UiIcon { anchors.centerIn: parent; pathData: window.iconPaths.close; ink: window.headerInk } }
+                contentItem: Item {
+                    VectorIcon {
+                        anchors.centerIn: parent
+                        iconName: "close"
+                        iconSize: 14
+                        iconColor: topCloseButton.hovered ? window.dangerColor : window.textMuted
+                    }
+                }
                 background: Rectangle {
-                    anchors.centerIn: parent
-                    width: 30
-                    height: 30
-                    radius: 15
+                    radius: 7
                     color: topCloseButton.hovered ? window.dangerSurface : "transparent"
-                    border.color: window.line
                 }
                 onClicked: window.requestClose()
             }
@@ -1176,52 +1465,145 @@ ApplicationWindow {
         spacing: 0
         visible: !window.settingsPageVisible
 
+        Rectangle {
+            visible: clipboardCapture.paused
+            Layout.fillWidth: true
+            Layout.preferredHeight: visible ? 34 : 0
+            color: Qt.rgba(window.favoriteColor.r, window.favoriteColor.g, window.favoriteColor.b, 0.14)
+            Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 1; color: window.line }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                spacing: 8
+                Text {
+                    Layout.fillWidth: true
+                    text: "剪贴板监听已暂停，新复制的内容不会被记录。"
+                    color: window.textMain
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                }
+                ToolButton {
+                    implicitHeight: 24
+                    padding: 6
+                    contentItem: Text {
+                        text: "恢复监听"
+                        color: window.accent
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                    }
+                    background: Rectangle {
+                        radius: 6
+                        color: parent.hovered ? window.selectedRow : "transparent"
+                    }
+                    onClicked: {
+                        clipboardCapture.setPaused(false)
+                        window.showStatusMessage("已恢复剪贴板监听。")
+                    }
+                }
+            }
+        }
+
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: 20
-            Layout.rightMargin: 20
-            Layout.topMargin: 16
-            Layout.bottomMargin: 12
-            spacing: 12
+            Layout.leftMargin: window.compactLayout ? 12 : 16
+            Layout.rightMargin: window.compactLayout ? 12 : 16
+            Layout.topMargin: 12
+            Layout.bottomMargin: 10
+            spacing: 10
 
             TextField {
                 id: searchField
                 Layout.fillWidth: true
-                Layout.preferredHeight: 42
-                placeholderText: "搜索历史记录…"
+                Layout.preferredHeight: 40
+                placeholderText: "搜索历史记录… (Ctrl+F)"
                 onTextEdited: searchTimer.restart()
                 leftPadding: 38
                 rightPadding: 48
-                font.pixelSize: 12
+                font.pixelSize: 13
                 color: window.textMain
                 placeholderTextColor: window.textMuted
+                selectionColor: window.accent
+                selectedTextColor: window.onAccent
                 Accessible.name: "搜索历史记录"
+                Keys.onDownPressed: {
+                    if (clipList.count > 0) {
+                        clipList.forceActiveFocus()
+                        if (clipList.currentIndex < 0)
+                            clipList.currentIndex = 0
+                        else if (clipList.currentIndex + 1 < clipList.count)
+                            clipList.currentIndex += 1
+                    }
+                }
+                Keys.onReturnPressed: function(event) {
+                    if (clipList.count > 0)
+                        window.triggerCopyAt(clipList.currentIndex >= 0 ? clipList.currentIndex : 0,
+                                             (event.modifiers & Qt.ShiftModifier) !== 0)
+                }
+                Keys.onEnterPressed: function(event) {
+                    if (clipList.count > 0)
+                        window.triggerCopyAt(clipList.currentIndex >= 0 ? clipList.currentIndex : 0,
+                                             (event.modifiers & Qt.ShiftModifier) !== 0)
+                }
                 Keys.onEscapePressed: {
-                    text = ""
-                    window.refreshFilteredHistory()
+                    if (text.length > 0) {
+                        text = ""
+                        window.refreshFilteredHistory()
+                    } else if (Qt.platform.os === "windows" && windowsPlatform.trayAvailable) {
+                        window.commitPendingDelete()
+                        windowsPlatform.hideToTray()
+                    }
                 }
                 background: Rectangle {
-                    radius: 8
-                    color: window.rowSurface
+                    radius: 10
+                    color: window.inputSurface
                     border.color: searchField.activeFocus ? window.accent : window.line
                     border.width: searchField.activeFocus ? 1.5 : 1
-                    UiIcon {
+                    VectorIcon {
                         anchors.left: parent.left
                         anchors.leftMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
-                        pathData: window.iconPaths.search
-                        ink: window.textMuted
+                        iconName: "search"
+                        iconSize: 15
+                        iconColor: searchField.activeFocus ? window.accent : window.textMuted
+                    }
+                    ToolButton {
+                        visible: searchField.text.length > 0
+                        anchors.right: parent.right
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        implicitWidth: 24
+                        implicitHeight: 24
+                        padding: 0
+                        Accessible.name: "清空搜索关键词"
+                        contentItem: Item {
+                            VectorIcon {
+                                anchors.centerIn: parent
+                                iconName: "close"
+                                iconSize: 12
+                                iconColor: parent.parent.hovered ? window.textMain : window.textMuted
+                            }
+                        }
+                        background: Rectangle {
+                            radius: 6
+                            color: parent.hovered ? window.tileSurface : "transparent"
+                        }
+                        onClicked: {
+                            searchField.text = ""
+                            window.refreshFilteredHistory()
+                            searchField.forceActiveFocus()
+                        }
                     }
                     Rectangle {
+                        visible: searchField.text.length === 0
                         anchors.right: parent.right
-                        anchors.rightMargin: 12
+                        anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         implicitWidth: escHint.implicitWidth + 10
-                        implicitHeight: 18
-                        radius: 4
+                        implicitHeight: 20
+                        radius: 5
                         color: window.tagSurface
-                        border.color: window.line
-                        UiText {
+                        Text {
                             id: escHint
                             anchors.centerIn: parent
                             text: "ESC"
@@ -1233,58 +1615,71 @@ ApplicationWindow {
                 }
             }
 
-            GridLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                columns: 6
-                columnSpacing: 6
-                rowSpacing: 6
-                Repeater {
-                    id: categoryRepeater
-                    model: ["全部", "文本", "链接", "文件", "图片", "收藏"]
-                    delegate: Button {
-                        id: categoryButton
-                        required property string modelData
-                        checkable: true
-                        checked: window.selectedCategory === modelData
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 1
-                        Layout.minimumWidth: 0
-                        Layout.preferredHeight: 30
-                        Accessible.name: modelData + (checked ? "，当前分类" : "")
-                        Accessible.description: "筛选" + modelData + "记录"
+                Layout.preferredHeight: 34
+                radius: 9
+                color: window.tagSurface
 
-                        contentItem: Item {
-                            implicitWidth: categoryContentGroup.implicitWidth
-                            implicitHeight: categoryContentGroup.implicitHeight
-                            Row {
-                                id: categoryContentGroup
-                                anchors.centerIn: parent
-                                spacing: 5
-                                UiIcon {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 15; height: 15
-                                    pathData: window.categoryIcon(categoryButton.modelData)
-                                    ink: categoryButton.checked ? window.accent : window.textMuted
-                                }
-                                UiText {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: categoryButton.modelData
-                                    color: categoryButton.checked ? window.accent : window.textMuted
-                                    font.pixelSize: 11
+                GridLayout {
+                    anchors.fill: parent
+                    anchors.margins: 3
+                    columns: 6
+                    columnSpacing: 2
+                    rowSpacing: 2
+                    Repeater {
+                        id: categoryRepeater
+                        model: ["全部", "文本", "链接", "文件", "图片", "收藏"]
+                        delegate: Button {
+                            id: categoryButton
+                            required property string modelData
+                            checkable: true
+                            checked: window.selectedCategory === modelData
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 1
+                            Layout.minimumWidth: 0
+                            Layout.fillHeight: true
+                            padding: 0
+                            Accessible.name: modelData + (checked ? "，当前分类" : "")
+                            Accessible.description: "筛选" + modelData + "记录"
+
+                            contentItem: Item {
+                                implicitWidth: categoryContentGroup.implicitWidth
+                                implicitHeight: categoryContentGroup.implicitHeight
+                                Row {
+                                    id: categoryContentGroup
+                                    anchors.centerIn: parent
+                                    spacing: window.compactLayout ? 4 : 5
+                                    VectorIcon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        iconName: window.categoryIconName(categoryButton.modelData)
+                                        iconSize: 13
+                                        iconColor: categoryButton.checked ? window.accent : window.textMuted
+                                        filled: categoryButton.modelData === "收藏" && categoryButton.checked
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: categoryButton.modelData
+                                        color: categoryButton.checked ? window.textMain : window.textMuted
+                                        font.pixelSize: 12
+                                        font.weight: categoryButton.checked ? Font.DemiBold : Font.Normal
+                                    }
                                 }
                             }
-                        }
 
-                        background: Rectangle {
-                            radius: 8
-                            color: categoryButton.checked ? window.selectedRow : "transparent"
-                            border.color: categoryButton.activeFocus ? window.accent : window.line
-                            border.width: categoryButton.activeFocus ? 1 : 0
-                        }
+                            background: Rectangle {
+                                radius: 7
+                                color: categoryButton.checked ? window.surface
+                                       : (categoryButton.hovered ? Qt.rgba(window.textMain.r, window.textMain.g, window.textMain.b, 0.05) : "transparent")
+                                border.color: categoryButton.checked ? window.line
+                                              : (categoryButton.activeFocus ? window.accent : "transparent")
+                                border.width: categoryButton.checked || categoryButton.activeFocus ? 1 : 0
+                            }
 
-                        onClicked: {
-                            window.selectedCategory = modelData
-                            window.refreshFilteredHistory()
+                            onClicked: {
+                                window.selectedCategory = modelData
+                                window.refreshFilteredHistory()
+                            }
                         }
                     }
                 }
@@ -1299,7 +1694,7 @@ ApplicationWindow {
 
         Timer {
             id: searchTimer
-            interval: 250
+            interval: 180
             repeat: false
             onTriggered: window.refreshFilteredHistory()
         }
@@ -1311,11 +1706,11 @@ ApplicationWindow {
             clip: true
             model: historyModel
             cacheBuffer: 0 // Avoid cancelling incubating offscreen delegates after a filter reset.
-            leftMargin: 20
-            rightMargin: 20
-            Layout.topMargin: 12
-            Layout.bottomMargin: 12
-            spacing: 0
+            leftMargin: window.compactLayout ? 12 : 16
+            rightMargin: window.compactLayout ? 12 : 16
+            Layout.topMargin: 8
+            Layout.bottomMargin: 8
+            spacing: 6
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
             WheelHandler {
@@ -1332,16 +1727,38 @@ ApplicationWindow {
                 }
             }
             keyNavigationEnabled: true
-            Keys.onReturnPressed: historyModel.copyItem(currentIndex)
-            Keys.onEnterPressed: historyModel.copyItem(currentIndex)
+            Keys.onUpPressed: function(event) {
+                if (currentIndex <= 0) {
+                    searchField.forceActiveFocus()
+                    event.accepted = true
+                } else {
+                    decrementCurrentIndex()
+                    event.accepted = true
+                }
+            }
+            Keys.onReturnPressed: function(event) {
+                window.triggerCopyAt(currentIndex, (event.modifiers & Qt.ShiftModifier) !== 0)
+            }
+            Keys.onEnterPressed: function(event) {
+                window.triggerCopyAt(currentIndex, (event.modifiers & Qt.ShiftModifier) !== 0)
+            }
+            Keys.onSpacePressed: {
+                if (currentItem && (currentItem.canExpand || currentItem.expanded))
+                    window.toggleEntry(currentItem.entryId, currentItem.kind)
+            }
             Keys.onDeletePressed: {
-                if (currentItem) {
-                    window.requestDelete(currentItem.entryId)
+                if (currentItem)
+                    window.quickDelete(currentItem.entryId, currentItem.favorite)
+            }
+            Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_F2 && currentItem) {
+                    event.accepted = true
+                    window.openNoteEditor(currentItem.entryId, currentItem.note)
                 }
             }
 
             delegate: Rectangle {
-                id: historyDelegate
+                id: entryCard
                 required property string clipText
                 required property string kind
                 required property url imageUrl
@@ -1355,124 +1772,164 @@ ApplicationWindow {
                 required property int index
                 required property var entryId
 
-                readonly property bool codePreview: kind === "文本" && /^(const |let |var |function |class |import |def |#include|public |SELECT )/.test(clipText.trim())
                 readonly property bool expanded: window.expandedEntryId === entryId
                 readonly property bool canExpand: expandable || entryTitle.truncated || kind === "图片"
+                readonly property bool pendingRemoved: window.pendingDeleteEntryId === entryId
 
+                visible: !pendingRemoved
                 width: clipList.width - clipList.leftMargin - clipList.rightMargin
-                height: entryLayout.implicitHeight + 20
+                height: pendingRemoved ? 0 : entryLayout.implicitHeight + 16
                 color: "transparent"
                 border.color: "transparent"
                 Accessible.role: Accessible.Button
                 Accessible.name: "复制 " + kind + "：" + clipText
-                focus: historyDelegate.ListView.isCurrentItem
+                focus: ListView.isCurrentItem
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 0
-                    color: historyDelegate.ListView.isCurrentItem ? window.selectedRow : cardHover.hovered ? window.tileSurface : window.rowSurface
-                    border.color: historyDelegate.ListView.isCurrentItem ? window.accent : "transparent"
-                    border.width: historyDelegate.ListView.isCurrentItem ? 1 : 0
-                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: window.line }
+                    radius: 10
+                    color: ListView.isCurrentItem ? window.selectedRow
+                           : (cardHover.hovered ? window.tileSurface : window.rowSurface)
+                    border.color: ListView.isCurrentItem
+                                  ? Qt.rgba(window.accent.r, window.accent.g, window.accent.b, 0.45)
+                                  : (cardHover.hovered ? window.line : Qt.rgba(window.line.r, window.line.g, window.line.b, 0.7))
+                    border.width: 1
 
+                    Rectangle {
+                        visible: entryCard.ListView.isCurrentItem
+                        anchors.left: parent.left
+                        anchors.leftMargin: 3
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 3
+                        height: Math.max(16, parent.height - 20)
+                        radius: 2
+                        color: window.accent
+                    }
                 }
                 HoverHandler { id: cardHover }
+
+                TapHandler {
+                    acceptedButtons: Qt.LeftButton
+                    onTapped: {
+                        clipList.currentIndex = index
+                        if (!appearanceSettings.doubleClickToPaste && (!expanded || kind === "图片"))
+                            window.triggerCopyAt(index, false)
+                    }
+                    onDoubleTapped: {
+                        clipList.currentIndex = index
+                        if (appearanceSettings.doubleClickToPaste && (!expanded || kind === "图片"))
+                            window.triggerCopyAt(index, false)
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onClicked: function(mouse) {
+                        clipList.currentIndex = index
+                        entryContextMenu.targetIndex = index
+                        entryContextMenu.targetEntryId = entryId
+                        entryContextMenu.targetKind = kind
+                        entryContextMenu.targetText = clipText
+                        entryContextMenu.targetNote = note
+                        entryContextMenu.targetFavorite = favorite
+                        entryContextMenu.targetCanExpand = canExpand
+                        entryContextMenu.targetExpanded = expanded
+                        entryContextMenu.targetSourceMissing = sourceMissing
+                        entryContextMenu.popup()
+                    }
+                }
 
                 ColumnLayout {
                     id: entryLayout
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 8
+                    anchors.bottomMargin: 8
+                    spacing: 6
 
                     RowLayout {
                         id: entryHeader
                         visible: !expanded
                         Layout.fillWidth: true
-                        Layout.preferredHeight: Math.max(38, entryTitle.implicitHeight + 14)
-                        spacing: 12
+                        spacing: 10
 
                         Rectangle {
-                            Layout.preferredWidth: 34
-                            Layout.preferredHeight: 34
-                            radius: 6
-                            color: window.page
-                            border.width: 0
-                            UiIcon {
+                            Layout.preferredWidth: 28
+                            Layout.preferredHeight: 28
+                            Layout.alignment: Qt.AlignTop
+                            Layout.topMargin: 1
+                            radius: 8
+                            color: window.kindTint(kind)
+                            VectorIcon {
                                 anchors.centerIn: parent
-                                pathData: codePreview ? window.iconPaths.code : window.categoryIcon(kind)
-                                ink: window.textMuted
-                            }
-                            TapHandler {
-                                onTapped: {
-                                    clipList.currentIndex = index
-                                    historyModel.copyItem(index)
-                                }
+                                iconName: window.kindIconName(kind)
+                                iconSize: 14
+                                iconColor: window.kindAccent(kind)
                             }
                         }
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 4
-                            TapHandler {
-                                onTapped: {
-                                    clipList.currentIndex = index
-                                    historyModel.copyItem(index)
-                                }
-                            }
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 3
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 7
-                                UiText {
+                                spacing: 6
+                                Text {
                                     id: entryTitle
                                     Layout.fillWidth: true
-                                    text: clipText
-                                    color: historyDelegate.ListView.isCurrentItem ? window.selectedText : window.textMain
-                                    font.pixelSize: codePreview ? 13 : 14
-                                    font.family: codePreview || kind === "文件" ? "Consolas" : (Qt.platform.os === "windows" ? "Microsoft YaHei UI" : Qt.application.font.family)
+                                    text: searchField.text.trim().length > 0
+                                          ? window.highlightedPreview(clipText, searchField.text)
+                                          : clipText
+                                    textFormat: searchField.text.trim().length > 0 ? Text.RichText : Text.PlainText
+                                    color: ListView.isCurrentItem ? window.selectedText : window.textMain
+                                    font.pixelSize: 13
                                     font.weight: Font.Normal
-                                    lineHeight: 1.45
+                                    lineHeight: 1.44
+                                    lineHeightMode: Text.ProportionalHeight
                                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                                     elide: Text.ElideRight
                                     maximumLineCount: 2
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        anchors.margins: -4
-                                        z: -1
-                                        visible: codePreview
-                                        radius: 4
-                                        color: window.inputSurface
-                                    }
+                                }
+                                Text {
+                                    visible: index < 9 && !window.compactLayout
+                                    Layout.alignment: Qt.AlignTop
+                                    Layout.topMargin: 2
+                                    text: String(index + 1)
+                                    color: window.textMuted
+                                    opacity: 0.45
+                                    font.family: "Consolas"
+                                    font.pixelSize: 11
                                 }
                                 Rectangle {
-                                    Layout.preferredWidth: kindLabel.implicitWidth + 14
-                                    Layout.preferredHeight: 19
-                                    radius: 6
-                                    color: "transparent"
-                                    UiText {
+                                    Layout.alignment: Qt.AlignTop
+                                    Layout.topMargin: 1
+                                    Layout.preferredWidth: kindLabel.implicitWidth + 10
+                                    Layout.preferredHeight: 18
+                                    radius: 5
+                                    color: window.kindTint(kind)
+                                    Text {
                                         id: kindLabel
                                         anchors.centerIn: parent
                                         text: kind
                                         color: window.kindAccent(kind)
-                                        font.pixelSize: 11
+                                        font.pixelSize: 10
                                         font.weight: Font.Medium
                                     }
                                 }
-                                FavoriteMark {
-                                    id: favoriteBadge
-                                    visible: favorite
-                                    ink: window.favoriteInk
-                                    tint: window.favoriteTint
-                                }
                             }
                             RowLayout {
+                                visible: uses.length > 0 || sourceMissing
                                 spacing: 8
-                                UiText {
+                                Text {
                                     visible: uses.length > 0
                                     text: uses
                                     color: window.textMuted
                                     font.pixelSize: 11
                                 }
-                                UiText {
+                                Text {
                                     visible: sourceMissing
                                     text: "源文件已不存在"
                                     color: window.dangerColor
@@ -1481,7 +1938,6 @@ ApplicationWindow {
                                 }
                             }
                         }
-
                     }
 
                     RowLayout {
@@ -1489,22 +1945,19 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         spacing: 10
                         Rectangle {
-                            Layout.preferredWidth: 34
-                            Layout.preferredHeight: 34
+                            Layout.preferredWidth: 28
+                            Layout.preferredHeight: 28
                             Layout.alignment: Qt.AlignTop
-                            radius: 6
-                            color: window.page
-                            border.width: 0
-                            UiIcon {
+                            radius: 8
+                            color: window.kindTint(kind)
+                            VectorIcon {
                                 anchors.centerIn: parent
-                                pathData: codePreview ? window.iconPaths.code : window.categoryIcon(kind)
-                                ink: window.textMuted
+                                iconName: window.kindIconName(kind)
+                                iconSize: 14
+                                iconColor: window.kindAccent(kind)
                             }
                             TapHandler {
-                                onTapped: {
-                                    clipList.currentIndex = index
-                                    historyModel.copyItem(index)
-                                }
+                                onTapped: window.triggerCopyAt(index, false)
                             }
                         }
                         ScrollView {
@@ -1518,17 +1971,20 @@ ApplicationWindow {
                             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                             ScrollBar.vertical.policy: ScrollBar.AsNeeded
                             background: null
-                            UiText {
+                            TextEdit {
                                 id: expandedText
                                 width: expandedTextScroll.availableWidth
-                                text: !expanded ? "" : window.expandedEntryLoadFailed ? "完整内容读取失败，请收起后重试。" :
+                                readOnly: true
+                                selectByMouse: true
+                                padding: 0
+                                text: window.expandedEntryLoadFailed ? "完整内容读取失败，请收起后重试。" :
                                       (window.expandedEntryText.length > 0 ? window.expandedEntryText : "正在加载完整内容…")
-                                textFormat: Text.PlainText
+                                textFormat: TextEdit.PlainText
                                 color: entryTitle.color
                                 font: entryTitle.font
-                                lineHeight: 1.5
-                                lineHeightMode: Text.ProportionalHeight
-                                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                                selectionColor: window.accent
+                                selectedTextColor: window.onAccent
+                                wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
                                 Accessible.role: Accessible.StaticText
                             }
                         }
@@ -1555,16 +2011,9 @@ ApplicationWindow {
                             verticalAlignment: Image.AlignTop
                             asynchronous: true
                             cache: true
-                            onStatusChanged: if (status === Image.Error) window.historyMessage = "图片文件已丢失，无法预览。"
+                            onStatusChanged: if (status === Image.Error) window.showStatusMessage("图片文件已丢失，无法预览。")
                         }
-                        TapHandler {
-                            id: imagePreviewTapHandler
-                            onTapped: {
-                                clipList.currentIndex = index
-                                historyModel.copyItem(index)
-                            }
-                        }
-                        UiText {
+                        Text {
                             anchors.centerIn: parent
                             visible: imagePreview.status === Image.Error
                             text: "图片文件已丢失，无法预览。"
@@ -1574,63 +2023,97 @@ ApplicationWindow {
                     }
 
                     Rectangle {
+                        id: notePreviewBanner
                         visible: note.length > 0
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 24
-                        radius: 0
-                        color: "transparent"
+                        Layout.leftMargin: 38
+                        Layout.rightMargin: 4
+                        implicitHeight: notePreviewRow.implicitHeight + 8
+                        radius: 6
+                        color: noteBannerHover.hovered
+                               ? Qt.rgba(window.textMain.r, window.textMain.g, window.textMain.b, 0.05)
+                               : "transparent"
+
+                        Rectangle {
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            anchors.topMargin: 4
+                            anchors.bottomMargin: 4
+                            width: 2
+                            radius: 1
+                            color: Qt.rgba(window.accent.r, window.accent.g, window.accent.b,
+                                           noteBannerHover.hovered ? 0.85 : 0.45)
+                        }
+
                         RowLayout {
+                            id: notePreviewRow
                             anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 8
-                            UiText { text: "备注"; color: window.accent; font.pixelSize: 11 }
-                            UiText {
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 6
+                            anchors.topMargin: 4
+                            anchors.bottomMargin: 4
+                            spacing: 6
+                            VectorIcon {
+                                Layout.alignment: Qt.AlignTop
+                                Layout.topMargin: 2
+                                iconName: "note"
+                                iconSize: 12
+                                iconColor: noteBannerHover.hovered ? window.accent : window.textMuted
+                            }
+                            Text {
                                 Layout.fillWidth: true
-                                text: note.replace(/[\r\n]+/g, " ")
-                                textFormat: Text.PlainText
-                                color: window.textMuted
-                                font.pixelSize: 11
+                                text: note
+                                color: noteBannerHover.hovered ? window.textMain : window.textMuted
+                                font.pixelSize: 12
+                                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                                maximumLineCount: expanded ? 12 : 2
                                 elide: Text.ElideRight
-                                maximumLineCount: 1
+                                lineHeight: 1.4
+                                lineHeightMode: Text.ProportionalHeight
                             }
                         }
-                        Accessible.role: Accessible.Button
-                        Accessible.name: "编辑备注：" + note
-                        TapHandler { onTapped: window.editNote(entryId, note) }
+                        HoverHandler {
+                            id: noteBannerHover
+                            cursorShape: Qt.PointingHandCursor
+                        }
+                        TapHandler {
+                            onTapped: window.openNoteEditor(entryId, note)
+                        }
                     }
 
                     Item {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 32
+                        Layout.preferredHeight: 26
                         RowLayout {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 8
+                            spacing: 6
                             Rectangle {
                                 visible: expanded
                                 width: footerKindLabel.implicitWidth + 12
-                                height: 19
-                                radius: 6
+                                height: 18
+                                radius: 5
                                 color: window.kindTint(kind)
-                                UiText {
+                                Text {
                                     id: footerKindLabel
                                     anchors.centerIn: parent
                                     text: kind
                                     color: window.kindAccent(kind)
-                                    font.pixelSize: 11
+                                    font.pixelSize: 10
                                 }
                             }
-                            UiText {
+                            Text {
                                 visible: uses.length > 0 && expanded
                                 text: uses
                                 color: window.textMuted
-                                font.pixelSize: 11
+                                font.pixelSize: 10
                             }
-                            UiText {
-                                visible: sourceMissing
+                            Text {
+                                visible: sourceMissing && expanded
                                 text: "源文件已不存在"
                                 color: window.dangerColor
-                                font.pixelSize: 11
+                                font.pixelSize: 10
                                 Accessible.role: Accessible.AlertMessage
                             }
                         }
@@ -1639,20 +2122,21 @@ ApplicationWindow {
                             anchors.centerIn: parent
                             visible: expanded || canExpand
                             Accessible.name: expanded ? "收起完整内容" : "展开完整内容"
-                            implicitWidth: 76
-                            implicitHeight: 29
-                            contentItem: UiText {
+                            implicitWidth: 64
+                            implicitHeight: 24
+                            contentItem: Text {
                                 text: expanded ? "收起" : "展开"
-                                color: window.textMain
-                                font.pixelSize: 12
+                                color: expandToggleButton.hovered ? window.accent : window.textMuted
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                                 wrapMode: Text.NoWrap
                             }
                             background: Rectangle {
-                                radius: 9
-                                color: expandToggleButton.hovered ? window.tileSurface : "transparent"
-                                border.color: expandToggleButton.activeFocus ? window.accent : window.line
+                                radius: 6
+                                color: expandToggleButton.hovered ? window.tagSurface : "transparent"
+                                border.color: expandToggleButton.activeFocus ? window.accent : "transparent"
                             }
                             onClicked: window.toggleEntry(entryId, kind)
                         }
@@ -1660,52 +2144,135 @@ ApplicationWindow {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 2
-                            ToolButton {
-                                id: noteButton
-                                text: "备注"
-                                Accessible.name: note.length > 0 ? "编辑备注" : "添加备注"
-                                implicitWidth: 42
-                                implicitHeight: 29
-                                contentItem: UiText {
-                                    text: noteButton.text
-                                    color: note.length > 0 ? window.accent : window.textMuted
-                                    font.pixelSize: 11
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
-                                background: Rectangle { radius: 8; color: noteButton.hovered ? window.tileSurface : "transparent" }
-                                onClicked: window.editNote(entryId, note)
-                            }
-                            UiText {
+                            Text {
                                 text: time
                                 color: window.textMuted
                                 font.pixelSize: 11
+                                Layout.rightMargin: 4
+                            }
+                            ToolButton {
+                                visible: kind === "链接" && Qt.platform.os === "windows" && (cardHover.hovered || entryCard.ListView.isCurrentItem)
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                ToolTip.visible: hovered
+                                ToolTip.delay: 400
+                                ToolTip.text: "在浏览器中打开"
+                                Accessible.name: "在浏览器中打开链接"
+                                contentItem: Item {
+                                    VectorIcon {
+                                        anchors.centerIn: parent
+                                        iconName: "external"
+                                        iconSize: 13
+                                        iconColor: parent.parent.hovered ? window.accent : window.textMuted
+                                    }
+                                }
+                                background: Rectangle { radius: 6; color: parent.hovered ? window.tagSurface : "transparent" }
+                                onClicked: {
+                                    if (!windowsPlatform.openExternalLink(clipText))
+                                        window.showStatusMessage("无法打开该链接。")
+                                }
+                            }
+                            ToolButton {
+                                visible: kind === "文件" && !sourceMissing && Qt.platform.os === "windows" && (cardHover.hovered || entryCard.ListView.isCurrentItem)
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                ToolTip.visible: hovered
+                                ToolTip.delay: 400
+                                ToolTip.text: "在资源管理器中显示"
+                                Accessible.name: "在资源管理器中显示文件"
+                                contentItem: Item {
+                                    VectorIcon {
+                                        anchors.centerIn: parent
+                                        iconName: "folder"
+                                        iconSize: 13
+                                        iconColor: parent.parent.hovered ? window.accent : window.textMuted
+                                    }
+                                }
+                                background: Rectangle { radius: 6; color: parent.hovered ? window.tagSurface : "transparent" }
+                                onClicked: {
+                                    if (!windowsPlatform.revealFileInExplorer(clipText))
+                                        window.showStatusMessage("无法在资源管理器中定位该文件。")
+                                }
+                            }
+                            ToolButton {
+                                visible: appearanceSettings.autoPasteIntoPreviousWindow && !sourceMissing && (cardHover.hovered || entryCard.ListView.isCurrentItem)
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                ToolTip.visible: hovered
+                                ToolTip.delay: 400
+                                ToolTip.text: "仅复制到剪贴板 (Shift+Enter)"
+                                Accessible.name: "仅复制到剪贴板"
+                                contentItem: Item {
+                                    VectorIcon {
+                                        anchors.centerIn: parent
+                                        iconName: "copy"
+                                        iconSize: 13
+                                        iconColor: parent.parent.hovered ? window.accent : window.textMuted
+                                    }
+                                }
+                                background: Rectangle { radius: 6; color: parent.hovered ? window.tagSurface : "transparent" }
+                                onClicked: window.triggerCopyAt(index, true)
+                            }
+                            ToolButton {
+                                id: noteButton
+                                visible: note.length > 0 || cardHover.hovered || entryCard.ListView.isCurrentItem
+                                ToolTip.visible: hovered
+                                ToolTip.delay: 400
+                                ToolTip.text: note.length > 0 ? "编辑备注 (F2)" : "添加备注 (F2)"
+                                Accessible.name: note.length > 0 ? "编辑备注" : "添加备注"
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                contentItem: Item {
+                                    VectorIcon {
+                                        anchors.centerIn: parent
+                                        iconName: "note"
+                                        iconSize: 13
+                                        iconColor: note.length > 0 ? window.accent : (noteButton.hovered ? window.textMain : window.textMuted)
+                                    }
+                                }
+                                background: Rectangle { radius: 6; color: noteButton.hovered ? window.tagSurface : "transparent" }
+                                onClicked: window.openNoteEditor(entryId, note)
                             }
                             ToolButton {
                                 id: favoriteButton
-                                Accessible.name: favorite ? "取消收藏" : "收藏"
-                                Accessible.checkable: true
-                                Accessible.checked: favorite
-                                contentItem: Item {
-                                    UiIcon { id: favoriteIcon; anchors.centerIn: parent; width: 16; height: 16; pathData: window.iconPaths.star; ink: favorite ? window.favoriteInk : window.textMuted; filled: favorite }
-                                }
+                                visible: favorite || cardHover.hovered || entryCard.ListView.isCurrentItem
                                 ToolTip.visible: hovered
+                                ToolTip.delay: 400
                                 ToolTip.text: favorite ? "取消收藏" : "收藏"
-                                implicitWidth: 28
-                                implicitHeight: 29
-                                palette.buttonText: favorite ? window.favoriteColor : window.textMuted
-                                background: Rectangle { radius: 5; color: favorite ? window.favoriteTint : favoriteButton.hovered ? window.tileSurface : "transparent" }
+                                Accessible.name: favorite ? "取消收藏" : "收藏"
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                contentItem: Item {
+                                    VectorIcon {
+                                        anchors.centerIn: parent
+                                        iconName: "star"
+                                        iconSize: 13
+                                        iconColor: favorite ? window.favoriteColor : (favoriteButton.hovered ? window.textMain : window.textMuted)
+                                        filled: favorite
+                                    }
+                                }
+                                background: Rectangle { radius: 6; color: favoriteButton.hovered ? window.tagSurface : "transparent" }
                                 onClicked: historyModel.setFavorite(index, !favorite)
                             }
                             ToolButton {
                                 id: deleteButton
-                                contentItem: Item { UiIcon { anchors.centerIn: parent; pathData: window.iconPaths.close; width: 16; height: 16; ink: deleteButton.hovered ? window.dangerColor : window.textMuted } }
+                                visible: cardHover.hovered || entryCard.ListView.isCurrentItem
+                                ToolTip.visible: hovered
+                                ToolTip.delay: 400
+                                ToolTip.text: favorite ? "删除收藏记录（需确认）" : "删除记录 (Del)"
                                 Accessible.name: "删除此记录"
-                                implicitWidth: 28
-                                implicitHeight: 29
-                                palette.buttonText: window.textMuted
-                                background: Rectangle { radius: 8; color: deleteButton.hovered ? window.dangerSurface : "transparent" }
-                                onClicked: window.requestDelete(entryId)
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                contentItem: Item {
+                                    VectorIcon {
+                                        anchors.centerIn: parent
+                                        iconName: "trash"
+                                        iconSize: 13
+                                        iconColor: deleteButton.hovered ? window.dangerColor : window.textMuted
+                                    }
+                                }
+                                background: Rectangle { radius: 6; color: deleteButton.hovered ? window.dangerSurface : "transparent" }
+                                onClicked: window.quickDelete(entryId, favorite)
                             }
                         }
                     }
@@ -1715,7 +2282,7 @@ ApplicationWindow {
             footer: Item {
                 width: clipList.width
                 height: historyModel.loading || historyModel.hasError || clipList.count === 0 ? 56 : 1
-                UiText {
+                Text {
                     anchors.centerIn: parent
                     text: historyModel.hasError ? "读取历史记录失败" : historyModel.loading ? "正在加载…" :
                           (searchField.text.length > 0 || window.selectedCategory !== "全部" ? "没有匹配记录" : "暂无剪贴板记录")
@@ -1727,27 +2294,67 @@ ApplicationWindow {
         }
 
         Rectangle {
+            z: 2
+            visible: window.pendingDeleteEntryId > 0
             Layout.fillWidth: true
-            Layout.preferredHeight: 36
+            Layout.preferredHeight: visible ? 36 : 0
+            color: window.surface
+            Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; height: 1; color: window.line }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                spacing: 10
+                Text {
+                    Layout.fillWidth: true
+                    text: "已删除 1 条记录"
+                    color: window.textMain
+                    font.pixelSize: 11
+                }
+                ToolButton {
+                    implicitHeight: 24
+                    padding: 8
+                    contentItem: Text {
+                        text: "撤销"
+                        color: window.accent
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                    }
+                    background: Rectangle {
+                        radius: 6
+                        color: parent.hovered ? window.selectedRow : "transparent"
+                    }
+                    onClicked: window.undoPendingDelete()
+                }
+            }
+        }
+
+        Rectangle {
+            z: 2
+            Layout.fillWidth: true
+            Layout.preferredHeight: 32
             color: window.sidebarSurface
             border.color: window.line
             border.width: 1
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 20
-                anchors.rightMargin: 20
-                UiText {
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                Text {
+                    Layout.fillWidth: true
                     text: window.historyMessage.length > 0 ? window.historyMessage :
                           historyModel.totalCount < 0 ? "正在读取记录总数…" : "共 " + historyModel.totalCount + " 条"
-                    color: window.textMuted
+                    color: window.historyMessage.length > 0 ? window.accent : window.textMuted
                     font.pixelSize: 11
+                    elide: Text.ElideRight
                 }
-                Item { Layout.fillWidth: true }
-                UiText {
-                    text: "Enter 复制　·　Del 删除"
+                Text {
+                    text: window.compactLayout
+                          ? "Enter 粘贴 · Esc 隐藏"
+                          : "Enter 粘贴 · Shift+Enter 仅复制 · Alt+1~9 快贴 · Esc 隐藏"
                     color: window.textMuted
-                    font.pixelSize: 11
+                    font.pixelSize: 10
                 }
             }
         }
@@ -1774,7 +2381,7 @@ ApplicationWindow {
         }
         contentItem: ColumnLayout {
             spacing: 12
-            UiText {
+            Text {
                 Layout.fillWidth: true
                 visible: hotkeyErrorDialog.failedSequence.length > 0
                 text: "快捷键：" + hotkeyErrorDialog.failedSequence
@@ -1782,7 +2389,7 @@ ApplicationWindow {
                 font.pixelSize: 12
                 wrapMode: Text.Wrap
             }
-            UiText {
+            Text {
                 Layout.fillWidth: true
                 text: hotkeyErrorDialog.failureReason
                 color: window.dangerColor
@@ -1790,7 +2397,7 @@ ApplicationWindow {
                 wrapMode: Text.Wrap
                 Accessible.role: Accessible.AlertMessage
             }
-            UiText {
+            Text {
                 Layout.fillWidth: true
                 text: hotkeyErrorDialog.recoveryDetail
                 color: window.textMuted
@@ -1846,6 +2453,194 @@ ApplicationWindow {
     }
 
     Dialog {
+        id: noteEditorDialog
+        property var entryId: 0
+        property string initialNote: ""
+        width: Math.min(window.width - 44, 420)
+        anchors.centerIn: parent
+        modal: true
+        padding: 0
+        onOpened: {
+            noteEditorField.text = initialNote
+            noteEditorField.forceActiveFocus()
+            noteEditorField.cursorPosition = noteEditorField.length
+        }
+        Overlay.modal: Rectangle {
+            color: Qt.rgba(0, 0, 0, window.themeMode === "浅色" ? 0.28 : 0.52)
+        }
+        background: Rectangle {
+            color: window.surface
+            border.color: window.line
+            border.width: 1
+            radius: 12
+        }
+        contentItem: ColumnLayout {
+            spacing: 0
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 18
+                Layout.rightMargin: 12
+                Layout.topMargin: 14
+                Layout.bottomMargin: 10
+                spacing: 8
+                VectorIcon {
+                    iconName: "note"
+                    iconSize: 15
+                    iconColor: window.accent
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: noteEditorDialog.initialNote.length > 0 ? "编辑备注" : "添加备注"
+                    color: window.textMain
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                }
+                ToolButton {
+                    implicitWidth: 28
+                    implicitHeight: 28
+                    Accessible.name: "关闭备注窗口"
+                    contentItem: Item {
+                        VectorIcon {
+                            anchors.centerIn: parent
+                            iconName: "close"
+                            iconSize: 13
+                            iconColor: parent.parent.hovered ? window.textMain : window.textMuted
+                        }
+                    }
+                    background: Rectangle {
+                        radius: 6
+                        color: parent.hovered ? window.tileSurface : "transparent"
+                    }
+                    onClicked: noteEditorDialog.reject()
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                Layout.bottomMargin: 12
+                spacing: 8
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 116
+                    radius: 9
+                    color: window.inputSurface
+                    border.color: noteEditorField.activeFocus ? window.accent : window.line
+                    border.width: noteEditorField.activeFocus ? 1.5 : 1
+
+                    ScrollView {
+                        anchors.fill: parent
+                        anchors.margins: 2
+                        clip: true
+                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                        background: null
+                        TextArea {
+                            id: noteEditorField
+                            placeholderText: "写点备忘说明，方便日后搜索和识别…"
+                            color: window.textMain
+                            placeholderTextColor: window.textMuted
+                            selectionColor: window.accent
+                            selectedTextColor: window.onAccent
+                            font.pixelSize: 13
+                            wrapMode: TextArea.Wrap
+                            padding: 10
+                            background: null
+                            onTextChanged: {
+                                if (text.length > 2000)
+                                    text = text.slice(0, 2000)
+                            }
+                            Keys.onPressed: function(event) {
+                                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                                        && (event.modifiers & Qt.ControlModifier)) {
+                                    event.accepted = true
+                                    if (historyModel.setNoteById(noteEditorDialog.entryId, noteEditorField.text.trim()))
+                                        noteEditorDialog.accept()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Text {
+                        text: "Ctrl+Enter 快速保存"
+                        color: window.textMuted
+                        font.pixelSize: 11
+                    }
+                    Item { Layout.fillWidth: true }
+                    Text {
+                        text: noteEditorField.text.length + " / 2000"
+                        color: noteEditorField.text.length > 1800 ? window.dangerColor : window.textMuted
+                        font.pixelSize: 11
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: window.line
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 18
+                Layout.rightMargin: 18
+                Layout.topMargin: 12
+                Layout.bottomMargin: 14
+                spacing: 8
+
+                ToolButton {
+                    visible: noteEditorDialog.initialNote.length > 0
+                    implicitHeight: 32
+                    leftPadding: 10
+                    rightPadding: 10
+                    contentItem: Text {
+                        text: "清空备注"
+                        color: parent.hovered ? window.dangerColor : window.textMuted
+                        font.pixelSize: 12
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        radius: 7
+                        color: parent.hovered ? window.dangerSurface : "transparent"
+                    }
+                    onClicked: {
+                        if (historyModel.setNoteById(noteEditorDialog.entryId, ""))
+                            noteEditorDialog.accept()
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                SettingsActionButton {
+                    implicitWidth: 74
+                    implicitHeight: 32
+                    themeTokens: window
+                    text: "取消"
+                    onClicked: noteEditorDialog.reject()
+                }
+                SettingsActionButton {
+                    implicitWidth: 78
+                    implicitHeight: 32
+                    themeTokens: window
+                    text: "保存"
+                    primaryAction: true
+                    onClicked: {
+                        if (historyModel.setNoteById(noteEditorDialog.entryId, noteEditorField.text.trim()))
+                            noteEditorDialog.accept()
+                    }
+                }
+            }
+        }
+    }
+
+    Dialog {
         id: importThemeNameDialog
         title: "命名导入主题"
         width: Math.min(window.width - 48, 440)
@@ -1861,7 +2656,7 @@ ApplicationWindow {
         background: Rectangle { color: window.surface; border.color: window.line; radius: 10 }
         contentItem: ColumnLayout {
             spacing: 10
-            UiText {
+            Text {
                 Layout.fillWidth: true
                 text: "输入名称后，主题会作为新选项加入列表。"
                 color: window.textMuted
@@ -1875,7 +2670,7 @@ ApplicationWindow {
                 placeholderText: "主题名称"
                 color: window.textMain
                 selectionColor: window.accent
-                selectedTextColor: window.accentText
+                selectedTextColor: window.onAccent
                 background: Rectangle {
                     color: window.inputSurface
                     border.color: importedThemeNameField.activeFocus ? window.accent : window.line
@@ -1886,7 +2681,7 @@ ApplicationWindow {
                         importThemeNameDialog.accept()
                 }
             }
-            UiText {
+            Text {
                 Layout.fillWidth: true
                 visible: window.themeImportMessage.length > 0
                 text: window.themeImportMessage
@@ -1930,130 +2725,49 @@ ApplicationWindow {
     }
 
     Loader {
-        id: noteDialogLoader
-        active: false
-        sourceComponent: Dialog {
-            id: noteDialog
-            parent: window.contentItem
-            anchors.centerIn: parent
-            width: Math.min(window.width - 48, 480)
-            modal: true
-            property var entryId: 0
-            property bool saving: false
-            property string errorText: ""
-            closePolicy: saving ? Popup.NoAutoClose : Popup.CloseOnEscape
-            function edit(id, text) {
-                entryId = id
-                noteEditor.text = text
-                saving = false
-                errorText = ""
-                open()
-                noteEditor.forceActiveFocus()
-            }
-            background: Rectangle { radius: 10; color: window.surface; border.color: window.line }
-            header: UiText {
-                text: "条目备注"
-                padding: 16
-                color: window.textMain
-                font.pixelSize: 16
-                font.weight: Font.DemiBold
-            }
-            contentItem: ColumnLayout {
-                spacing: 10
-                UiText { text: "仅作为备注保存，不会复制到剪贴板。"; color: window.textMuted; font.pixelSize: 11 }
-                ScrollView {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 160
-                    contentWidth: availableWidth
-                    clip: true
-                    TextArea {
-                        id: noteEditor
-                        enabled: !noteDialog.saving
-                        wrapMode: TextEdit.Wrap
-                        textFormat: TextEdit.PlainText
-                        selectByMouse: true
-                        placeholderText: "写下用途、来源或提醒…"
-                        Accessible.name: "备注内容，最多 2000 字"
-                        color: window.textMain
-                        placeholderTextColor: window.textMuted
-                        selectionColor: window.accent
-                        selectedTextColor: window.accentText
-                        font.pixelSize: 12
-                        padding: 10
-                        background: Rectangle {
-                            radius: 7
-                            color: window.inputSurface
-                            border.color: noteEditor.activeFocus ? window.accent : window.line
-                        }
-                    }
-                }
-                UiText {
-                    Layout.fillWidth: true
-                    text: noteDialog.errorText.length > 0 ? noteDialog.errorText : noteEditor.length + " / 2000 · 留空并保存可移除备注"
-                    color: noteDialog.errorText.length > 0 || noteEditor.length > 2000 ? window.dangerColor : window.textMuted
-                    wrapMode: Text.Wrap
-                    font.pixelSize: 11
-                }
-            }
-            footer: Item {
-                implicitHeight: 60
-                RowLayout {
-                anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
-                    Item { Layout.fillWidth: true }
-                    SettingsActionButton {
-                        themeTokens: window
-                        Layout.preferredWidth: 76
-                        text: "取消"
-                        enabled: !noteDialog.saving
-                        onClicked: noteDialog.reject()
-                    }
-                    SettingsActionButton {
-                        id: noteSaveButton
-                        themeTokens: window
-                        Layout.preferredWidth: 76
-                        text: noteDialog.saving ? "保存中…" : "保存"
-                        primaryAction: true
-                        enabled: !noteDialog.saving && noteEditor.length <= 2000
-                        onClicked: {
-                            noteDialog.saving = true
-                            noteDialog.errorText = ""
-                            if (!historyModel.setNoteById(noteDialog.entryId, noteEditor.text)) {
-                                noteDialog.saving = false
-                                noteDialog.errorText = "暂时无法保存，请稍后重试。"
-                            }
-                        }
-                }
-                }
-            }
-            Connections {
-                target: historyModel
-                function onNoteSaveFinished(id, success) {
-                    if (id !== noteDialog.entryId || !noteDialog.saving) return
-                    noteDialog.saving = false
-                    if (success) noteDialog.accept()
-                    else noteDialog.errorText = "保存失败，记录可能已被删除；备注内容仍保留在此。"
-                }
-            }
-        }
-    }
-
-    Loader {
         id: deleteDialogLoader
         active: false
         sourceComponent: Dialog {
         id: deleteDialog
         parent: window.contentItem
-        width: Math.min(window.width - 48, 480)
+        width: Math.min(window.width - 48, 440)
         property var entryId: 0
         anchors.centerIn: parent
         modal: true
         title: "删除记录？"
-        standardButtons: Dialog.Yes | Dialog.No
         onAccepted: historyModel.removeItemById(entryId)
         background: Rectangle { color: window.surface; border.color: window.line; radius: 10 }
-        contentItem: UiText { text: "此操作会删除选中的剪贴板历史记录。"; color: window.textMain; padding: 16; wrapMode: Text.Wrap }
+        header: Label {
+            text: deleteDialog.title
+            color: window.textMain
+            font.pixelSize: 14
+            font.weight: Font.DemiBold
+            padding: 16
+            bottomPadding: 4
+        }
+        contentItem: Text {
+            text: "此操作会永久删除选中的剪贴板历史记录。"
+            color: window.textMuted
+            font.pixelSize: 12
+            padding: 16
+            topPadding: 8
+            wrapMode: Text.Wrap
+        }
+        footer: RowLayout {
+            spacing: 8
+            Item { Layout.fillWidth: true }
+            SettingsActionButton {
+                themeTokens: window
+                text: "取消"
+                onClicked: deleteDialog.reject()
+            }
+            SettingsActionButton {
+                themeTokens: window
+                text: "确认删除"
+                primaryAction: true
+                onClicked: deleteDialog.accept()
+            }
+        }
     }
 
     }
@@ -2064,14 +2778,43 @@ ApplicationWindow {
         sourceComponent: Dialog {
         id: clearDialog
         parent: window.contentItem
-        width: Math.min(window.width - 48, 480)
+        width: Math.min(window.width - 48, 440)
         anchors.centerIn: parent
         modal: true
-        title: "清空历史记录？"
-        standardButtons: Dialog.Yes | Dialog.No
+        title: "清空全部历史记录？"
         onAccepted: historyModel.clearHistory()
         background: Rectangle { color: window.surface; border.color: window.line; radius: 10 }
-        contentItem: UiText { text: "将删除全部历史记录及不再引用的图片文件。"; color: window.textMain; padding: 16; wrapMode: Text.Wrap }
+        header: Label {
+            text: clearDialog.title
+            color: window.textMain
+            font.pixelSize: 14
+            font.weight: Font.DemiBold
+            padding: 16
+            bottomPadding: 4
+        }
+        contentItem: Text {
+            text: "将删除全部历史记录及不再引用的图片文件，此操作不可恢复。"
+            color: window.textMuted
+            font.pixelSize: 12
+            padding: 16
+            topPadding: 8
+            wrapMode: Text.Wrap
+        }
+        footer: RowLayout {
+            spacing: 8
+            Item { Layout.fillWidth: true }
+            SettingsActionButton {
+                themeTokens: window
+                text: "取消"
+                onClicked: clearDialog.reject()
+            }
+            SettingsActionButton {
+                themeTokens: window
+                text: "确认清空"
+                primaryAction: true
+                onClicked: clearDialog.accept()
+            }
+        }
     }
 
     }
@@ -2082,18 +2825,42 @@ ApplicationWindow {
         sourceComponent: Dialog {
         id: importDialog
         parent: window.contentItem
-        width: Math.min(window.width - 48, 480)
+        width: Math.min(window.width - 48, 460)
         anchors.centerIn: parent
         modal: true
         title: "导入旧版历史？"
-        standardButtons: Dialog.Yes | Dialog.No
         onAccepted: historyModel.importLegacyDatabase(window.legacyDatabasePath)
         background: Rectangle { color: window.surface; border.color: window.line; radius: 10 }
-        contentItem: UiText {
-            text: "程序会读取所选 SQLite 数据库及其同级 images 文件夹，将可识别记录导入当前历史。旧文件不会被修改。重复运行会跳过已导入记录。"
+        header: Label {
+            text: importDialog.title
             color: window.textMain
+            font.pixelSize: 14
+            font.weight: Font.DemiBold
             padding: 16
+            bottomPadding: 4
+        }
+        contentItem: Text {
+            text: "程序会读取所选 SQLite 数据库及其同级 images 文件夹，将可识别记录导入当前历史。旧文件不会被修改。重复运行会跳过已导入记录。"
+            color: window.textMuted
+            font.pixelSize: 12
+            padding: 16
+            topPadding: 8
             wrapMode: Text.Wrap
+        }
+        footer: RowLayout {
+            spacing: 8
+            Item { Layout.fillWidth: true }
+            SettingsActionButton {
+                themeTokens: window
+                text: "取消"
+                onClicked: importDialog.reject()
+            }
+            SettingsActionButton {
+                themeTokens: window
+                text: "开始导入"
+                primaryAction: true
+                onClicked: importDialog.accept()
+            }
         }
     }
 
@@ -2108,7 +2875,7 @@ ApplicationWindow {
         background: Rectangle { color: window.surface; border.color: window.line; radius: 10 }
         contentItem: ColumnLayout {
             spacing: 12
-            UiText {
+            Text {
                 Layout.fillWidth: true
                 text: "选择关闭方式：保存到托盘后，程序会继续在后台监听剪贴板。"
                 color: window.textMain
@@ -2166,7 +2933,7 @@ ApplicationWindow {
     MouseArea { z: 1; enabled: !window.resolutionLocked; anchors.right: parent.right; anchors.top: parent.top; width: 10; height: 10; cursorShape: Qt.SizeBDiagCursor; onPressed: window.startSystemResize(Qt.RightEdge | Qt.TopEdge) }
     MouseArea { z: 1; enabled: !window.resolutionLocked; anchors.left: parent.left; anchors.bottom: parent.bottom; width: 10; height: 10; cursorShape: Qt.SizeBDiagCursor; onPressed: window.startSystemResize(Qt.LeftEdge | Qt.BottomEdge) }
     MouseArea { z: 1; enabled: !window.resolutionLocked; anchors.right: parent.right; anchors.bottom: parent.bottom; width: 10; height: 10; cursorShape: Qt.SizeFDiagCursor; onPressed: window.startSystemResize(Qt.RightEdge | Qt.BottomEdge) }
-    UiText {
+    Text {
         anchors.centerIn: parent
         visible: window.settingsPageVisible && settingsPageLoader.status === Loader.Loading
         text: "正在加载设置…"
@@ -2216,240 +2983,12 @@ ApplicationWindow {
                     width: settingsScroll.availableWidth
                     spacing: 14
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.bottomMargin: 8
-                        spacing: 4
-                        UiText { text: "偏好设置"; color: window.textMain; font.pixelSize: 22; font.weight: Font.DemiBold; Accessible.role: Accessible.Heading }
-                        UiText { text: "窗口、快捷键与历史记录的偏好"; color: window.textMuted; font.pixelSize: 12 }
-                    }
-
-            SettingsSection {
-                Layout.fillWidth: true
-                heading: "外观主题"
-                description: "选择主题配色，或导入自己的主题"
-                iconPath: window.iconPaths.theme
-                iconColor: window.favoriteColor
-                surfaceColor: window.surface
-                borderColor: window.line
-                titleColor: window.textMain
-                subtitleColor: window.textMuted
-                Flow {
-                    id: themePreviewFlow
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 180
-                    spacing: 8
-                    Repeater {
-                        id: themePreviewRepeater
-                        model: window.themeOptions()
-                        delegate: Button {
-                            id: themePreviewButton
-                            required property var modelData
-                            readonly property var preview: modelData.palette
-                            width: 180
-                            height: 166
-                            readonly property bool selected: window.themeIsSelected(modelData.id)
-                            Accessible.name: modelData.name
-                                              + (selected ? "，当前主题" : "")
-                            background: Rectangle {
-                                radius: 10
-                                color: themePreviewButton.selected ? window.selectedRow : window.surface
-                                border.color: themePreviewButton.selected ? window.accent : window.line
-                                border.width: themePreviewButton.selected ? 2 : 1
-                            }
-                            contentItem: ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 9
-                                spacing: 6
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    UiText {
-                                        Layout.fillWidth: true
-                                        text: themePreviewButton.modelData.name
-                                        color: window.textMain
-                                        font.pixelSize: 11
-                                        font.weight: Font.DemiBold
-                                        elide: Text.ElideRight
-                                    }
-                                    UiText {
-                                        visible: themePreviewButton.selected
-                                        text: "✓ 当前"
-                                        color: window.accent
-                                        font.pixelSize: 10
-                                    }
-                                }
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 82
-                                    radius: 7
-                                    color: themePreviewButton.preview.page
-                                    border.color: themePreviewButton.preview.line
-                                    clip: true
-                                    ColumnLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 5
-                                        spacing: 3
-                                        RowLayout {
-                                            Layout.fillWidth: true
-                                            Layout.preferredHeight: 12
-                                            Rectangle {
-                                                Layout.preferredWidth: 8
-                                                Layout.preferredHeight: 8
-                                                radius: 3
-                                                color: themePreviewButton.preview.accent
-                                            }
-                                            UiText {
-                                                text: "剪贴板历史"
-                                                color: themePreviewButton.preview.textMain
-                                                font.pixelSize: 8
-                                                font.weight: Font.DemiBold
-                                            }
-                                            Item { Layout.fillWidth: true }
-                                        }
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            Layout.preferredHeight: 15
-                                            radius: 4
-                                            color: themePreviewButton.preview.inputSurface
-                                            border.color: themePreviewButton.preview.line
-                                            UiText {
-                                                anchors.left: parent.left
-                                                anchors.leftMargin: 6
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "⌕  搜索历史记录…"
-                                                color: themePreviewButton.preview.textMuted
-                                                font.pixelSize: 7
-                                            }
-                                        }
-                                        RowLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 3
-                                            Repeater {
-                                                model: ["全部", "文本", "链接", "图片"]
-                                                delegate: Rectangle {
-                                                    id: previewFilterButton
-                                                    required property int index
-                                                    required property string modelData
-                                                    Layout.fillWidth: true
-                                                    Layout.preferredHeight: 12
-                                                    radius: 4
-                                                    color: index === 0 ? themePreviewButton.preview.accent : themePreviewButton.preview.surface
-                                                    Row {
-                                                        anchors.centerIn: parent
-                                                        spacing: 1
-                                                        UiText {
-                                                            text: window.categorySymbol(previewFilterButton.modelData)
-                                                            color: previewFilterButton.index === 0
-                                                                   ? (themePreviewButton.preview.onAccent || "#FFFFFF")
-                                                                   : themePreviewButton.preview.accent
-                                                            font.pixelSize: 6
-                                                            font.bold: true
-                                                        }
-                                                        UiText {
-                                                            text: previewFilterButton.modelData
-                                                            color: previewFilterButton.index === 0
-                                                                   ? (themePreviewButton.preview.onAccent || "#FFFFFF")
-                                                                   : themePreviewButton.preview.textMuted
-                                                            font.pixelSize: 6
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            Layout.preferredHeight: 17
-                                            radius: 4
-                                            color: themePreviewButton.preview.surface
-                                            border.color: themePreviewButton.preview.line
-                                            RowLayout {
-                                                anchors.fill: parent
-                                                anchors.leftMargin: 5
-                                                anchors.rightMargin: 5
-                                                spacing: 4
-                                                Rectangle {
-                                                    Layout.preferredWidth: 5
-                                                    Layout.preferredHeight: 5
-                                                    radius: 3
-                                                    color: themePreviewButton.preview.accent
-                                                }
-                                                UiText {
-                                                    Layout.fillWidth: true
-                                                    text: "文本记录示例"
-                                                    color: themePreviewButton.preview.textMain
-                                                    font.pixelSize: 7
-                                                }
-                                                UiText {
-                                                    text: "刚刚"
-                                                    color: themePreviewButton.preview.textMuted
-                                                    font.pixelSize: 6
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 3
-                                    Repeater {
-                                        model: [
-                                            { label: "页面", color: themePreviewButton.preview.page },
-                                            { label: "卡片", color: themePreviewButton.preview.surface },
-                                            { label: "强调", color: themePreviewButton.preview.accent },
-                                            { label: "文字", color: themePreviewButton.preview.textMain }
-                                        ]
-                                        delegate: RowLayout {
-                                            required property var modelData
-                                            Layout.fillWidth: true
-                                            spacing: 3
-                                            Rectangle {
-                                                Layout.preferredWidth: 8
-                                                Layout.preferredHeight: 8
-                                                radius: 4
-                                                color: modelData.color
-                                                border.color: themePreviewButton.preview.line
-                                            }
-                                            UiText {
-                                                text: modelData.label
-                                                color: window.textMuted
-                                                font.pixelSize: 7
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            onClicked: window.selectThemeOption(modelData.id)
-                        }
-                    }
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-                    Item { Layout.fillWidth: true }
-                    SettingsActionButton {
-                        Layout.preferredWidth: 150
-                        themeTokens: window
-                        text: "导入主题 JSON…"
-                        Accessible.name: "从 JSON 文件导入并命名新主题"
-                        onClicked: customThemeFileDialog.open()
-                    }
-                }
-                UiText {
-                    Layout.fillWidth: true
-                    visible: window.themeImportMessage.length > 0
-                    text: window.themeImportMessage
-                    color: window.themeImportMessage.indexOf("已添加") === 0 ? window.accent : window.dangerColor
-                    font.pixelSize: 11
-                    wrapMode: Text.Wrap
-                }
-            }
-
             SettingsSection {
                 Layout.fillWidth: true
                 visible: Qt.platform.os === "windows"
                 heading: "窗口与托盘"
                 description: "关闭行为和系统启动方式"
-                iconPath: window.iconPaths.window
+                iconText: "window"
                 iconColor: window.accent
                 surfaceColor: window.surface
                 borderColor: window.line
@@ -2462,8 +3001,8 @@ ApplicationWindow {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 3
-                        UiText { text: "关闭按钮行为"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
-                        UiText {
+                        Text { text: "关闭按钮行为"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
+                        Text {
                             Layout.fillWidth: true
                             text: "选择保存到托盘后，窗口关闭时仍会在后台监听。"
                             color: window.textMuted
@@ -2484,7 +3023,7 @@ ApplicationWindow {
                             color: closeActionCombo.down ? window.selectedRow : window.inputSurface
                             border.color: closeActionCombo.activeFocus ? window.accent : window.line
                         }
-                        contentItem: UiText {
+                        contentItem: Text {
                             leftPadding: 12
                             rightPadding: 30
                             text: closeActionCombo.displayText
@@ -2493,7 +3032,7 @@ ApplicationWindow {
                             verticalAlignment: Text.AlignVCenter
                             elide: Text.ElideRight
                         }
-                        indicator: UiText {
+                        indicator: Text {
                             x: closeActionCombo.width - width - 11
                             y: (closeActionCombo.height - height) / 2
                             text: closeActionCombo.popup.visible ? "⌃" : "⌄"
@@ -2512,7 +3051,7 @@ ApplicationWindow {
                                 radius: 5
                                 color: parent.highlighted ? window.selectedRow : "transparent"
                             }
-                            contentItem: UiText {
+                            contentItem: Text {
                                 text: modelData
                                 leftPadding: 10
                                 color: closeActionDelegate.highlighted ? window.accent : window.textMain
@@ -2547,8 +3086,8 @@ ApplicationWindow {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 3
-                        UiText { text: "开机自动启动"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
-                        UiText {
+                        Text { text: "开机自动启动"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
+                        Text {
                             Layout.fillWidth: true
                             text: "登录 Windows 后启动并隐藏到托盘。"
                             color: window.textMuted
@@ -2566,21 +3105,50 @@ ApplicationWindow {
                         onClicked: window.applyStartWithWindows(checked)
                     }
                 }
-                UiText {
+                Text {
                     Layout.fillWidth: true
                     text: "托盘不可用时窗口会显示。启动项只含程序路径和启动参数；配置与历史数据仍保存在软件数据目录。"
                     color: window.textMuted
                     font.pixelSize: 11
                     wrapMode: Text.Wrap
                 }
+                Rectangle { Layout.fillWidth: true; height: 1; color: window.line }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 16
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+                        Text { text: "失焦自动隐藏"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
+                        Text {
+                            Layout.fillWidth: true
+                            text: "点击其他应用窗口时自动隐藏到托盘；开启窗口置顶时不触发。"
+                            color: window.textMuted
+                            font.pixelSize: 11
+                            wrapMode: Text.Wrap
+                        }
+                    }
+                    ThemeCheckBox {
+                        id: autoHideOnBlurCheckBox
+                        themeTokens: window
+                        text: "启用"
+                        checked: window.autoHideOnBlur
+                        Accessible.name: "窗口失去焦点时自动隐藏到托盘"
+                        onToggled: {
+                            window.autoHideOnBlur = checked
+                            appearanceSettings.sync()
+                        }
+                    }
+                }
             }
 
             SettingsSection {
                 Layout.fillWidth: true
                 heading: "窗口尺寸"
-                description: "Qt 逻辑像素：宽度 720–" + window.maximumAllowedWindowWidth + " px，高度 520–"
+                description: "Qt 逻辑像素：宽度 " + window.minimumWindowWidth + "–" + window.maximumAllowedWindowWidth
+                              + " px，高度 " + window.minimumWindowHeight + "–"
                               + window.maximumAllowedWindowHeight + " px；未锁定时拖动窗口会自动记录尺寸"
-                iconPath: window.iconPaths.resize
+                iconText: "resize"
                 iconColor: window.accent
                 surfaceColor: window.surface
                 borderColor: window.line
@@ -2590,7 +3158,7 @@ ApplicationWindow {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 10
-                    UiText {
+                    Text {
                         text: "宽"
                         color: window.textMain
                         font.pixelSize: 11
@@ -2618,7 +3186,7 @@ ApplicationWindow {
                             text: windowWidthSpinBox.displayText
                             color: window.textMain
                             selectionColor: window.accent
-                            selectedTextColor: window.accentText
+                            selectedTextColor: window.onAccent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             readOnly: !windowWidthSpinBox.editable
@@ -2632,7 +3200,7 @@ ApplicationWindow {
                             y: 4
                             radius: 3
                             color: windowWidthSpinBox.hovered ? window.tileSurface : "transparent"
-                            UiText {
+                            Text {
                                 anchors.centerIn: parent
                                 text: "⌃"
                                 color: window.textMuted
@@ -2646,7 +3214,7 @@ ApplicationWindow {
                             y: parent.height - height - 4
                             radius: 3
                             color: windowWidthSpinBox.hovered ? window.tileSurface : "transparent"
-                            UiText {
+                            Text {
                                 anchors.centerIn: parent
                                 text: "⌄"
                                 color: window.textMuted
@@ -2660,12 +3228,12 @@ ApplicationWindow {
                             opacity: windowWidthSpinBox.enabled ? 1 : 0.55
                         }
                     }
-                    UiText {
+                    Text {
                         text: "×"
                         color: window.textMuted
                         font.pixelSize: 14
                     }
-                    UiText {
+                    Text {
                         text: "高"
                         color: window.textMain
                         font.pixelSize: 11
@@ -2693,7 +3261,7 @@ ApplicationWindow {
                             text: windowHeightSpinBox.displayText
                             color: window.textMain
                             selectionColor: window.accent
-                            selectedTextColor: window.accentText
+                            selectedTextColor: window.onAccent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             readOnly: !windowHeightSpinBox.editable
@@ -2707,7 +3275,7 @@ ApplicationWindow {
                             y: 4
                             radius: 3
                             color: windowHeightSpinBox.hovered ? window.tileSurface : "transparent"
-                            UiText {
+                            Text {
                                 anchors.centerIn: parent
                                 text: "⌃"
                                 color: window.textMuted
@@ -2721,7 +3289,7 @@ ApplicationWindow {
                             y: parent.height - height - 4
                             radius: 3
                             color: windowHeightSpinBox.hovered ? window.tileSurface : "transparent"
-                            UiText {
+                            Text {
                                 anchors.centerIn: parent
                                 text: "⌄"
                                 color: window.textMuted
@@ -2755,21 +3323,221 @@ ApplicationWindow {
 
             SettingsSection {
                 Layout.fillWidth: true
-                heading: "复制结果提示"
-                description: "醒目提示复制成功或失败，稍后自动消失"
-                iconPath: window.iconPaths.text
-                iconColor: window.accent
+                heading: "外观主题"
+                description: "选择主题配色，或导入自己的主题"
+                iconText: "palette"
+                iconColor: window.favoriteColor
                 surfaceColor: window.surface
                 borderColor: window.line
                 titleColor: window.textMain
                 subtitleColor: window.textMuted
-                ThemeCheckBox {
-                    id: copyNotificationsToggle
-                    themeTokens: window
-                    text: "显示复制结果提示"
-                    checked: appearanceSettings.copyNotificationsEnabled
-                    Accessible.name: text
-                    onToggled: appearanceSettings.copyNotificationsEnabled = checked
+                Flow {
+                    id: themePreviewFlow
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 180
+                    spacing: 8
+                    Repeater {
+                        id: themePreviewRepeater
+                        model: window.themeOptions()
+                        delegate: Button {
+                            id: themePreviewButton
+                            required property var modelData
+                            readonly property var preview: modelData.palette
+                            width: 180
+                            height: 166
+                            readonly property bool selected: window.themeIsSelected(modelData.id)
+                            Accessible.name: modelData.name
+                                              + (selected ? "，当前主题" : "")
+                            background: Rectangle {
+                                radius: 10
+                                color: themePreviewButton.selected ? window.selectedRow : window.surface
+                                border.color: themePreviewButton.selected ? window.accent : window.line
+                                border.width: themePreviewButton.selected ? 2 : 1
+                            }
+                            contentItem: ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 9
+                                spacing: 6
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: themePreviewButton.modelData.name
+                                        color: window.textMain
+                                        font.pixelSize: 11
+                                        font.weight: Font.DemiBold
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        visible: themePreviewButton.selected
+                                        text: "✓ 当前"
+                                        color: window.accent
+                                        font.pixelSize: 10
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 82
+                                    radius: 7
+                                    color: themePreviewButton.preview.page
+                                    border.color: themePreviewButton.preview.line
+                                    clip: true
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 5
+                                        spacing: 3
+                                        RowLayout {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 12
+                                            Rectangle {
+                                                Layout.preferredWidth: 8
+                                                Layout.preferredHeight: 8
+                                                radius: 3
+                                                color: themePreviewButton.preview.accent
+                                            }
+                                            Text {
+                                                text: "剪贴板历史"
+                                                color: themePreviewButton.preview.textMain
+                                                font.pixelSize: 8
+                                                font.weight: Font.DemiBold
+                                            }
+                                            Item { Layout.fillWidth: true }
+                                        }
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 15
+                                            radius: 4
+                                            color: themePreviewButton.preview.inputSurface
+                                            border.color: themePreviewButton.preview.line
+                                            Text {
+                                                anchors.left: parent.left
+                                                anchors.leftMargin: 6
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: "⌕  搜索历史记录…"
+                                                color: themePreviewButton.preview.textMuted
+                                                font.pixelSize: 7
+                                            }
+                                        }
+                                        RowLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 3
+                                            Repeater {
+                                                model: ["全部", "文本", "链接", "图片"]
+                                                delegate: Rectangle {
+                                                    id: previewFilterButton
+                                                    required property int index
+                                                    required property string modelData
+                                                    Layout.fillWidth: true
+                                                    Layout.preferredHeight: 12
+                                                    radius: 4
+                                                    color: index === 0 ? themePreviewButton.preview.accent : themePreviewButton.preview.surface
+                                                    Row {
+                                                        anchors.centerIn: parent
+                                                        spacing: 1
+                                                        Text {
+                                                            text: window.categorySymbol(previewFilterButton.modelData)
+                                                            color: previewFilterButton.index === 0
+                                                                   ? (themePreviewButton.preview.onAccent || "#FFFFFF")
+                                                                   : themePreviewButton.preview.accent
+                                                            font.pixelSize: 6
+                                                            font.bold: true
+                                                        }
+                                                        Text {
+                                                            text: previewFilterButton.modelData
+                                                            color: previewFilterButton.index === 0
+                                                                   ? (themePreviewButton.preview.onAccent || "#FFFFFF")
+                                                                   : themePreviewButton.preview.textMuted
+                                                            font.pixelSize: 6
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 17
+                                            radius: 4
+                                            color: themePreviewButton.preview.surface
+                                            border.color: themePreviewButton.preview.line
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 5
+                                                anchors.rightMargin: 5
+                                                spacing: 4
+                                                Rectangle {
+                                                    Layout.preferredWidth: 5
+                                                    Layout.preferredHeight: 5
+                                                    radius: 3
+                                                    color: themePreviewButton.preview.accent
+                                                }
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: "文本记录示例"
+                                                    color: themePreviewButton.preview.textMain
+                                                    font.pixelSize: 7
+                                                }
+                                                Text {
+                                                    text: "刚刚"
+                                                    color: themePreviewButton.preview.textMuted
+                                                    font.pixelSize: 6
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 3
+                                    Repeater {
+                                        model: [
+                                            { label: "页面", color: themePreviewButton.preview.page },
+                                            { label: "卡片", color: themePreviewButton.preview.surface },
+                                            { label: "强调", color: themePreviewButton.preview.accent },
+                                            { label: "文字", color: themePreviewButton.preview.textMain }
+                                        ]
+                                        delegate: RowLayout {
+                                            required property var modelData
+                                            Layout.fillWidth: true
+                                            spacing: 3
+                                            Rectangle {
+                                                Layout.preferredWidth: 8
+                                                Layout.preferredHeight: 8
+                                                radius: 4
+                                                color: modelData.color
+                                                border.color: themePreviewButton.preview.line
+                                            }
+                                            Text {
+                                                text: modelData.label
+                                                color: window.textMuted
+                                                font.pixelSize: 7
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            onClicked: window.selectThemeOption(modelData.id)
+                        }
+                    }
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    Item { Layout.fillWidth: true }
+                    SettingsActionButton {
+                        Layout.preferredWidth: 150
+                        themeTokens: window
+                        text: "导入主题 JSON…"
+                        Accessible.name: "从 JSON 文件导入并命名新主题"
+                        onClicked: customThemeFileDialog.open()
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: window.themeImportMessage.length > 0
+                    text: window.themeImportMessage
+                    color: window.themeImportMessage.indexOf("已添加") === 0 ? window.accent : window.dangerColor
+                    font.pixelSize: 11
+                    wrapMode: Text.Wrap
                 }
             }
 
@@ -2778,7 +3546,7 @@ ApplicationWindow {
                 visible: Qt.platform.os === "windows"
                 heading: "全局快捷键"
                 description: "呼出历史面板并控制复制后的粘贴行为"
-                iconPath: window.iconPaths.keyboard
+                iconText: "keyboard"
                 iconColor: window.accent
                 surfaceColor: window.surface
                 borderColor: window.line
@@ -2793,9 +3561,10 @@ ApplicationWindow {
                         spacing: 16
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: 3
-                            UiText { text: "唤醒面板"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
-                            UiText {
+                            Text { text: "唤醒面板"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
+                            Text {
                                 Layout.fillWidth: true
                                 text: window.hotkeyCaptureActive ? "按下至少包含一个 Ctrl、Alt、Shift 或 Windows 键的组合。" : "点击当前快捷键后，直接按下要录制的组合键。"
                                 color: window.textMuted
@@ -2828,7 +3597,7 @@ ApplicationWindow {
                                 color: hotkeyCaptureButton.activeFocus ? window.tileSurface : window.inputSurface
                                 border.color: window.hotkeyCaptureActive ? window.accent : window.line
                             }
-                            contentItem: UiText {
+                            contentItem: Text {
                                 text: hotkeyCaptureButton.text
                                 color: window.hotkeyCaptureActive ? window.accent : window.textMain
                                 horizontalAlignment: Text.AlignHCenter
@@ -2843,9 +3612,10 @@ ApplicationWindow {
                         spacing: 16
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: 3
-                            UiText { text: "复制后自动粘贴"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
-                            UiText {
+                            Text { text: "复制后自动粘贴"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
+                            Text {
                                 Layout.fillWidth: true
                                 text: "向上一个窗口发送 Ctrl+V，可能替换其中已选中的内容。"
                                 color: window.textMuted
@@ -2861,6 +3631,35 @@ ApplicationWindow {
                             onToggled: appearanceSettings.autoPasteIntoPreviousWindow = checked
                         }
                     }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: window.line }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 16
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 3
+                            Text { text: "双击记录再复制粘贴"; color: window.textMain; font.pixelSize: 12; font.weight: Font.Medium }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "开启后单击卡片仅选中，双击或按 Enter 才复制粘贴，减少误触。"
+                                color: window.textMuted
+                                font.pixelSize: 11
+                                wrapMode: Text.Wrap
+                            }
+                        }
+                        ThemeCheckBox {
+                            id: doubleClickPasteCheckBox
+                            themeTokens: window
+                            text: "启用"
+                            checked: window.doubleClickToPaste
+                            Accessible.name: "双击记录再复制粘贴"
+                            onToggled: {
+                                window.doubleClickToPaste = checked
+                                appearanceSettings.sync()
+                            }
+                        }
+                    }
                 }
             }
 
@@ -2869,7 +3668,7 @@ ApplicationWindow {
                 id: retentionSection
                 heading: "定时删除"
                 description: "保留近期非收藏记录，收藏始终保留"
-                iconPath: window.iconPaths.clock
+                iconText: "clock"
                 iconColor: window.accent
                 surfaceColor: window.surface
                 borderColor: window.line
@@ -2888,10 +3687,9 @@ ApplicationWindow {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 12
-                        UiText { text: "保留最近"; color: window.textMain }
-                        SettingsNumberInput {
+                        Text { text: "保留最近"; color: window.textMain }
+                        SpinBox {
                             id: retentionDuration
-                            themeTokens: window
                             Layout.preferredWidth: 140
                             enabled: retentionEnabled.checked
                             from: 1
@@ -2899,7 +3697,14 @@ ApplicationWindow {
                             value: appearanceSettings.retentionHours > 0
                                    ? (retentionUnit.currentIndex === 1 ? appearanceSettings.retentionHours / 24
                                                                        : appearanceSettings.retentionHours) : 30
+                            editable: true
+                            palette.text: window.textMain
+                            palette.buttonText: window.textMain
+                            palette.button: window.inputSurface
+                            palette.base: window.inputSurface
+                            palette.highlight: window.accent
                             Accessible.name: "非收藏历史保留时长"
+                            background: Rectangle { radius: 5; color: window.inputSurface; border.color: parent.activeFocus ? window.accent : window.line }
                         }
                         ComboBox {
                             id: retentionUnit
@@ -2917,7 +3722,7 @@ ApplicationWindow {
                         }
                         Item { Layout.fillWidth: true }
                     }
-                    UiText {
+                    Text {
                         Layout.fillWidth: true
                         text: "按最近一次采集时间计算；相同内容再次采集会续期。启用或修改期限后立即检查，运行期间每分钟检查一次。删除不可恢复，文件记录的源文件不会被删除。"
                         color: window.textMuted
@@ -2927,7 +3732,7 @@ ApplicationWindow {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 12
-                        UiText {
+                        Text {
                             Layout.fillWidth: true
                             text: appearanceSettings.retentionHours > 0
                                   ? "当前：保留最近 " + appearanceSettings.retentionHours + " 小时的非收藏记录"
@@ -2940,13 +3745,16 @@ ApplicationWindow {
                             id: applyRetentionButton
                             themeTokens: window
                             text: "应用保留设置"
+                            primaryAction: (retentionEnabled.checked
+                                            ? retentionDuration.value * (retentionUnit.currentIndex === 1 ? 24 : 1)
+                                            : 0) !== appearanceSettings.retentionHours
                             Accessible.name: text
                             onClicked: {
                                 appearanceSettings.retentionHours = retentionEnabled.checked
                                         ? retentionDuration.value * (retentionUnit.currentIndex === 1 ? 24 : 1) : 0
                                 appearanceSettings.sync()
-                                window.historyMessage = appearanceSettings.retentionHours > 0
-                                        ? "保留设置已生效，过期的非收藏记录将自动删除。" : "已关闭定时删除，历史将永久保留。"
+                                window.showStatusMessage(appearanceSettings.retentionHours > 0
+                                        ? "保留设置已生效，过期的非收藏记录将自动删除。" : "已关闭定时删除，历史将永久保留。")
                             }
                         }
                     }
@@ -2958,7 +3766,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 heading: "总条目数量上限"
                 description: "默认无限制，开启后清理最旧的非收藏记录"
-                iconPath: window.iconPaths.stack
+                iconText: "layers"
                 iconColor: window.accent
                 surfaceColor: window.surface
                 borderColor: window.line
@@ -2977,21 +3785,27 @@ ApplicationWindow {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 12
-                        UiText { text: "最多保存"; color: window.textMain }
-                        SettingsNumberInput {
+                        Text { text: "最多保存"; color: window.textMain }
+                        SpinBox {
                             id: maximumEntriesValue
-                            themeTokens: window
                             Layout.preferredWidth: 160
                             enabled: maximumEntriesEnabled.checked
                             from: 1
                             to: 2147483647
                             value: appearanceSettings.maximumEntries > 0 ? appearanceSettings.maximumEntries : 10000
+                            editable: true
+                            palette.text: window.textMain
+                            palette.buttonText: window.textMain
+                            palette.button: window.inputSurface
+                            palette.base: window.inputSurface
+                            palette.highlight: window.accent
                             Accessible.name: "历史总条目数量上限"
+                            background: Rectangle { radius: 5; color: window.inputSurface; border.color: parent.activeFocus ? window.accent : window.line }
                         }
-                        UiText { text: "条"; color: window.textMain }
+                        Text { text: "条"; color: window.textMain }
                         Item { Layout.fillWidth: true }
                     }
-                    UiText {
+                    Text {
                         Layout.fillWidth: true
                         text: "总数包含收藏。启用或修改后检查，采集新记录后继续检查；超过上限时从最旧的非收藏记录开始删除。收藏始终保留，若收藏数超过上限，实际总数仍会超过上限。删除不可恢复。"
                         color: window.textMuted
@@ -3001,7 +3815,7 @@ ApplicationWindow {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 12
-                        UiText {
+                        Text {
                             Layout.fillWidth: true
                             text: appearanceSettings.maximumEntries > 0
                                   ? "当前：最多 " + appearanceSettings.maximumEntries + " 条，收藏受保护"
@@ -3014,13 +3828,40 @@ ApplicationWindow {
                             id: applyMaximumEntriesButton
                             themeTokens: window
                             text: "应用数量上限"
+                            primaryAction: (maximumEntriesEnabled.checked ? maximumEntriesValue.value : 0)
+                                           !== appearanceSettings.maximumEntries
                             Accessible.name: text
                             onClicked: {
                                 appearanceSettings.maximumEntries = maximumEntriesEnabled.checked ? maximumEntriesValue.value : 0
                                 appearanceSettings.sync()
-                                window.historyMessage = appearanceSettings.maximumEntries > 0
-                                        ? "数量上限已生效，超限的非收藏记录将自动清理。" : "已关闭数量上限。"
+                                window.showStatusMessage(appearanceSettings.maximumEntries > 0
+                                        ? "数量上限已生效，超限的非收藏记录将自动清理。" : "已关闭数量上限。")
                             }
+                        }
+                    }
+                    Rectangle { Layout.fillWidth: true; height: 1; color: window.line }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 16
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 3
+                            Text { text: "清空全部历史记录"; color: window.dangerColor; font.pixelSize: 12; font.weight: Font.Medium }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "立即删除全部剪贴板历史（包含收藏）及不再引用的图片文件。"
+                                color: window.textMuted
+                                font.pixelSize: 11
+                                wrapMode: Text.Wrap
+                            }
+                        }
+                        SettingsActionButton {
+                            id: clearAllHistoryButton
+                            themeTokens: window
+                            text: "清空历史…"
+                            Accessible.name: "清空全部历史记录"
+                            onClicked: window.openClearDialog()
                         }
                     }
                 }
@@ -3030,7 +3871,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 heading: "数据存储"
                 description: "SQLite 数据库路径与旧版历史迁移"
-                iconPath: window.iconPaths.database
+                iconText: "database"
                 iconColor: window.accent
                 surfaceColor: window.surface
                 borderColor: window.line
@@ -3043,13 +3884,13 @@ ApplicationWindow {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 7
-                        UiText {
+                        Text {
                             text: "导入旧版历史"
                             color: window.textMain
                             font.pixelSize: 12
                             font.weight: Font.Medium
                         }
-                        UiText {
+                        Text {
                             Layout.fillWidth: true
                             text: "选择旧项目的 SQLite 数据库；程序会读取同级 images 文件夹。旧数据只读，重复导入可安全重试。"
                             color: window.textMuted
@@ -3088,7 +3929,7 @@ ApplicationWindow {
                         }
                     }
                     Rectangle { Layout.fillWidth: true; height: 1; color: window.line }
-                    UiText {
+                    Text {
                         Layout.fillWidth: true
                         text: "选择一个可写的空文件夹。应用后重启，程序会在服务启动前复制数据；原目录保留。"
                         color: window.textMuted
@@ -3101,7 +3942,7 @@ ApplicationWindow {
                         color: window.inputSurface
                         border.color: window.line
                         radius: 5
-                        UiText {
+                        Text {
                             anchors.fill: parent
                             anchors.margins: 9
                             text: window.pendingStorageDirectory
@@ -3145,7 +3986,7 @@ ApplicationWindow {
                             }
                         }
                     }
-                    UiText {
+                    Text {
                         Layout.fillWidth: true
                         visible: window.storageError.length > 0
                         text: window.storageError

@@ -18,6 +18,7 @@ class WindowsPlatformController final : public QObject {
     Q_PROPERTY(QString globalHotkey READ globalHotkey NOTIFY globalHotkeyChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
     Q_PROPERTY(bool trayAvailable READ trayAvailable NOTIFY trayAvailableChanged)
+    Q_PROPERTY(bool capturePaused READ capturePaused WRITE setCapturePaused NOTIFY capturePausedChanged)
 
 public:
     enum class InstanceResult { Primary, Forwarded, Error };
@@ -31,6 +32,8 @@ public:
     QString globalHotkey() const { return m_globalHotkey; }
     QString lastError() const { return m_lastError; }
     bool trayAvailable() const { return m_trayAvailable; }
+    bool capturePaused() const { return m_capturePaused; }
+    void setCapturePaused(bool paused);
 
     Q_INVOKABLE bool setGlobalHotkey(const QString &sequence);
     Q_INVOKABLE bool setAutoStartEnabled(bool enabled);
@@ -39,6 +42,9 @@ public:
     Q_INVOKABLE void hideToTray();
     Q_INVOKABLE void toggleWindow();
     Q_INVOKABLE void quit();
+    Q_INVOKABLE bool openExternalLink(const QString &url);
+    Q_INVOKABLE bool revealFileInExplorer(const QString &filePath);
+    Q_INVOKABLE bool copyPlainText(const QString &text);
     void processTrayMessage(quintptr message, quintptr data);
     void rememberForegroundWindow();
 
@@ -48,6 +54,9 @@ signals:
     void globalHotkeyChanged();
     void lastErrorChanged();
     void trayAvailableChanged();
+    void capturePausedChanged();
+    void pauseToggleRequested();
+    void settingsRequested();
     void hotkeyRegistrationFailed(const QString &error);
 
 private slots:
@@ -69,6 +78,7 @@ private:
     void *m_previousWindow = nullptr;
     unsigned int m_hotkeyId = 0;
     bool m_trayAvailable = false;
+    bool m_capturePaused = false;
 };
 
 } // namespace ClipboardHistory::Platform::Windows

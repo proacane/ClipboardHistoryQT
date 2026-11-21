@@ -10,14 +10,18 @@
 #include <windows.h>
 #include <shellapi.h>
 
+#include <QClipboard>
 #include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QKeySequence>
 #include <QLocalSocket>
+#include <QProcess>
 #include <QThread>
 #include <QTimer>
+#include <QUrl>
 #include <QWindow>
 
 #include <string>
@@ -27,10 +31,18 @@ namespace {
 
 constexpr UINT trayCallbackMessage = WM_APP + 17;
 constexpr UINT trayShowCommand = 101;
+constexpr UINT trayPauseCommand = 102;
 constexpr UINT trayQuitCommand = 103;
+constexpr UINT traySettingsCommand = 104;
 constexpr UINT hotkeyIdFirst = 0xC101;
 constexpr UINT hotkeyIdSecond = 0xC102;
 constexpr wchar_t trayWindowClassName[] = L"ClipboardHistory.TrayWindow";
+
+UINT taskbarCreatedMessage()
+{
+    static const UINT msg = RegisterWindowMessageW(L"TaskbarCreated");
+    return msg;
+}
 #ifdef CLIPBOARDHISTORY_TESTING
 constexpr wchar_t autoStartRegistryKey[] = L"Software\\ClipboardHistory\\Testing\\Run";
 #else
@@ -117,6 +129,10 @@ LRESULT CALLBACK trayWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
         }
         if (message == WM_COMMAND) {
             controller->processTrayMessage(message, LOWORD(wParam));
+            return 0;
+        }
+        if (taskbarCreatedMessage() != 0 && message == taskbarCreatedMessage()) {
+            controller->processTrayMessage(message, 0);
             return 0;
         }
     }
@@ -267,7 +283,9 @@ bool WindowsPlatformController::createTrayWindow()
     icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     icon.uCallbackMessage = trayCallbackMessage;
     icon.hIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_CLIPBOARD_HISTORY));
-    wcscpy_s(icon.szTip, L"剪切板历史");
+    if (!icon.hIcon)
+        icon.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    wcscpy_s(icon.szTip, m_capturePaused ? L"剪切板历史（已暂停监听）" : L"剪切板历史");
     if (!Shell_NotifyIconW(NIM_ADD, &icon)) {
         const DWORD error = GetLastError();
         DestroyWindow(hwnd);
@@ -445,9 +463,65 @@ void WindowsPlatformController::toggleWindow()
         showWindow();
 }
 
+void WindowsPlatformController::setCapturePaused(bool paused)
+{
+    if (m_capturePaused == paused)
+        return;
+    m_capturePaused = paused;
+    if (m_trayWindow) {
+        NOTIFYICONDATAW icon{};
+        icon.cbSize = sizeof(icon);
+        icon.hWnd = static_cast<HWND>(m_trayWindow);
+        icon.uID = 1;
+        icon.uFlags = NIF_TIP;
+        wcscpy_s(icon.szTip, m_capturePaused ? L"剪切板历史（已暂停监听）" : L"剪切板历史");
+        Shell_NotifyIconW(NIM_MODIFY, &icon);
+    }
+    emit capturePausedChanged();
+}
+
 void WindowsPlatformController::quit()
 {
     QCoreApplication::exit(0);
+}
+
+bool WindowsPlatformController::openExternalLink(const QString &urlText)
+{
+    const QUrl url(urlText.trimmed());
+    if (!url.isValid()
+        || (url.scheme().compare(QStringLiteral("http"), Qt::CaseInsensitive) != 0
+            && url.scheme().compare(QStringLiteral("https"), Qt::CaseInsensitive) != 0)) {
+        return false;
+    }
+    const std::wstring wide = url.toString(QUrl::FullyEncoded).toStdWString();
+    const auto result = reinterpret_cast<qintptr>(
+        ShellExecuteW(nullptr, L"open", wide.c_str(), nullptr, nullptr, SW_SHOWNORMAL));
+    return result > 32;
+}
+
+bool WindowsPlatformController::revealFileInExplorer(const QString &filePath)
+{
+    QString target;
+    for (const QString &line : filePath.split(QLatin1Char('\n'), Qt::SkipEmptyParts)) {
+        const QString trimmed = line.trimmed();
+        if (!trimmed.isEmpty() && QFileInfo::exists(trimmed)) {
+            target = QDir::toNativeSeparators(trimmed);
+            break;
+        }
+    }
+    if (target.isEmpty())
+        return false;
+    return QProcess::startDetached(QStringLiteral("explorer.exe"),
+                                   {QStringLiteral("/select,%1").arg(target)});
+}
+
+bool WindowsPlatformController::copyPlainText(const QString &text)
+{
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    if (!clipboard || text.isEmpty())
+        return false;
+    clipboard->setText(text);
+    return true;
 }
 
 void WindowsPlatformController::acceptConnections()
@@ -465,6 +539,23 @@ void WindowsPlatformController::acceptConnections()
 
 void WindowsPlatformController::processTrayMessage(quintptr message, quintptr data)
 {
+    if (taskbarCreatedMessage() != 0 && message == taskbarCreatedMessage()) {
+        if (m_trayWindow) {
+            NOTIFYICONDATAW icon{};
+            icon.cbSize = sizeof(icon);
+            icon.hWnd = static_cast<HWND>(m_trayWindow);
+            icon.uID = 1;
+            icon.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+            icon.uCallbackMessage = trayCallbackMessage;
+            icon.hIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_CLIPBOARD_HISTORY));
+            if (!icon.hIcon)
+                icon.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+            wcscpy_s(icon.szTip, m_capturePaused ? L"剪切板历史（已暂停监听）" : L"剪切板历史");
+            Shell_NotifyIconW(NIM_ADD, &icon);
+        }
+        return;
+    }
+
     if (message == WM_HOTKEY) {
         if (data == m_hotkeyId) {
             emit globalHotkeyActivated();
@@ -475,13 +566,17 @@ void WindowsPlatformController::processTrayMessage(quintptr message, quintptr da
 
     if (message == trayCallbackMessage) {
         const UINT event = LOWORD(data);
-        if (event == WM_LBUTTONDBLCLK)
+        if (event == WM_LBUTTONUP)
             toggleWindow();
         if (event == WM_RBUTTONUP || event == WM_CONTEXTMENU) {
             HMENU menu = CreatePopupMenu();
             if (!menu)
                 return;
             AppendMenuW(menu, MF_STRING, trayShowCommand, L"显示窗口");
+            AppendMenuW(menu, MF_STRING, trayPauseCommand,
+                        m_capturePaused ? L"恢复监听" : L"暂停监听");
+            AppendMenuW(menu, MF_STRING, traySettingsCommand, L"偏好设置");
+            AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
             AppendMenuW(menu, MF_STRING, trayQuitCommand, L"退出");
             POINT point{};
             GetCursorPos(&point);
@@ -497,6 +592,11 @@ void WindowsPlatformController::processTrayMessage(quintptr message, quintptr da
     if (message == WM_COMMAND) {
         switch (static_cast<UINT>(data)) {
         case trayShowCommand: showWindow(); break;
+        case trayPauseCommand: emit pauseToggleRequested(); break;
+        case traySettingsCommand:
+            showWindow();
+            emit settingsRequested();
+            break;
         case trayQuitCommand: quit(); break;
         default: break;
         }

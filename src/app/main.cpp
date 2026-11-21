@@ -7,9 +7,9 @@
 #endif
 
 #include <QGuiApplication>
-#include <QFont>
 #include <QClipboard>
 #include <QDebug>
+#include <QFont>
 #include <QIcon>
 #include <QMimeData>
 #include <QQmlApplicationEngine>
@@ -147,6 +147,12 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("historyModel"), &historyModel);
     engine.rootContext()->setContextProperty(QStringLiteral("clipboardCapture"), &clipboardCapture);
 #ifdef Q_OS_WIN
+    QObject::connect(&windowsPlatform, &ClipboardHistory::Platform::Windows::WindowsPlatformController::pauseToggleRequested,
+                     &clipboardCapture, &ClipboardHistory::Core::ClipboardCapture::togglePaused);
+    QObject::connect(&clipboardCapture, &ClipboardHistory::Core::ClipboardCapture::pausedChanged,
+                     &windowsPlatform, [&windowsPlatform, &clipboardCapture] {
+        windowsPlatform.setCapturePaused(clipboardCapture.paused());
+    });
     engine.rootContext()->setContextProperty(QStringLiteral("windowsPlatform"), &windowsPlatform);
     windowsPlatform.rememberForegroundWindow();
 #endif
@@ -161,9 +167,6 @@ int main(int argc, char *argv[])
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());
         if (window) {
             window->setGraphicsConfiguration(graphicsConfiguration);
-            // Auxiliary feedback windows must use the same portable cache location.
-            for (auto *auxiliary : window->findChildren<QQuickWindow *>())
-                auxiliary->setGraphicsConfiguration(graphicsConfiguration);
             window->show();
         }
     }

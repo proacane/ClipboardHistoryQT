@@ -152,10 +152,23 @@ void ClipboardCapture::onRecordCompleted(const HistoryRecordResult &result)
         emit recordFailed(result);
 }
 
+void ClipboardCapture::setPaused(bool paused)
+{
+    if (m_paused == paused)
+        return;
+    m_paused = paused;
+    emit pausedChanged();
+}
+
+void ClipboardCapture::togglePaused()
+{
+    setPaused(!m_paused);
+}
+
 void ClipboardCapture::captureCurrentClipboard()
 {
     Q_ASSERT(QThread::currentThread() == thread());
-    if (!m_queueReady || m_clipboard->ownsClipboard())
+    if (!m_queueReady || m_paused || m_clipboard->ownsClipboard())
         return;
 
     const QMimeData *mimeData = m_clipboard->mimeData(QClipboard::Clipboard);
